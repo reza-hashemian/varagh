@@ -1,0 +1,44 @@
+name: Build
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.6
+          cache: true
+      - run: flutter pub get
+      - run: flutter test
+      - run: flutter build windows --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: varagh-windows-x64
+          path: build/windows/x64/runner/Release
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y clang ninja-build libgtk-3-dev
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.6
+          cache: true
+      - run: flutter pub get
+      - run: flutter test
+      - run: flutter build linux --release
+      - run: cp packaging/linux/install.sh packaging/linux/uninstall.sh assets/icon/varagh.png build/linux/x64/release/bundle/
+      - run: tar -C build/linux/x64/release -czf varagh-linux-x64.tar.gz --transform 's/^bundle/varagh/' bundle
+      - uses: actions/upload-artifact@v4
+        with:
+          name: varagh-linux-x64
+          path: varagh-linux-x64.tar.gz

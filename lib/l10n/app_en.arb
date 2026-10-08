@@ -1,0 +1,402 @@
+{
+  "@@locale": "en",
+  "appName": "Varagh",
+  "library": "Library",
+  "settings": "Settings",
+  "addBook": "Add book",
+  "continueReading": "Continue reading",
+  "allBooks": "All books",
+  "emptyLibraryTitle": "No books yet",
+  "emptyLibraryBody": "Add a PDF, EPUB, Markdown, HTML or text file. It opens right where you left off, every time.",
+  "pageOf": "Page {page} of {count}",
+  "@pageOf": {
+    "placeholders": {
+      "page": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "notStarted": "Not started",
+  "remove": "Remove from library",
+  "removeTitle": "Remove this book?",
+  "removeBody": "“{title}” and its reading position are deleted from this device. The original file you imported stays where it is.",
+  "@removeBody": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "cancel": "Cancel",
+  "importing": "Adding…",
+  "importFailed": "Couldn't add “{name}”. Check that the file is readable and one of: PDF, EPUB, Markdown, HTML, text.",
+  "@importFailed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "alreadyInLibrary": "“{title}” is already in your library.",
+  "@alreadyInLibrary": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "bookFileMissing": "This book's file is missing from the device. Remove it and add it again.",
+  "appearance": "Appearance",
+  "lookLight": "Light",
+  "lookPaper": "Paper",
+  "lookDark": "Dark",
+  "lookBlack": "Black",
+  "language": "Language",
+  "languageSystem": "System language",
+  "pageColor": "Page color",
+  "pageColorHint": "Saved for this book.",
+  "paperOriginal": "Original",
+  "paperPaper": "Paper",
+  "paperSepia": "Sepia",
+  "paperGreen": "Green",
+  "paperGray": "Gray",
+  "paperDark": "Dark",
+  "paperBlack": "Black",
+  "strength": "Strength",
+  "contrast": "Contrast",
+  "zoomIn": "Zoom in",
+  "zoomOut": "Zoom out",
+  "back": "Back",
+  "notes": "Notes",
+  "search": "Search",
+  "searchHint": "Search books, highlights and notes",
+  "searchEmptyTitle": "Search everything",
+  "searchEmptyBody": "Type a word to find book titles, highlighted passages and your notes.",
+  "noResults": "Nothing found for “{query}”.",
+  "@noResults": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "books": "Books",
+  "highlights": "Highlights",
+  "recent": "Recently read",
+  "newNote": "New note",
+  "noNotesTitle": "No notes yet",
+  "noNotesBody": "Write down a thought. The first line becomes the title, and Markdown works.",
+  "noteHint": "Title on the first line, then your note…",
+  "untitled": "Untitled",
+  "deleteNote": "Delete note",
+  "deleteNoteTitle": "Delete this note?",
+  "deleteNoteBody": "“{title}” is removed from this device.",
+  "@deleteNoteBody": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "delete": "Delete",
+  "done": "Done",
+  "preview": "Preview",
+  "edit": "Edit",
+  "selectNote": "Pick a note from the list, or start a new one.",
+  "highlight": "Highlight",
+  "highlightHint": "Select text on the page first, then highlight it.",
+  "noHighlightsTitle": "No highlights yet",
+  "noHighlightsBody": "Select a sentence and press the highlighter. It shows up here with its page.",
+  "highlightNoteHint": "Add a note to this highlight…",
+  "deleteHighlight": "Delete highlight",
+  "pageN": "Page {page}",
+  "@pageN": {
+    "placeholders": {
+      "page": {
+        "type": "String"
+      }
+    }
+  },
+  "findInBook": "Find in book",
+  "findHint": "Find in this book",
+  "matchOf": "{index} of {count}",
+  "@matchOf": {
+    "placeholders": {
+      "index": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "noMatches": "No matches",
+  "previous": "Previous",
+  "next": "Next",
+  "accentColor": "Accent color",
+  "accentBlue": "Blue",
+  "accentPurple": "Purple",
+  "accentPink": "Pink",
+  "accentRed": "Red",
+  "accentOrange": "Orange",
+  "accentGreen": "Green",
+  "accentGraphite": "Graphite",
+  "colorYellow": "Yellow",
+  "general": "General",
+  "about": "About",
+  "version": "Version",
+  "storedOnDevice": "Everything is stored on this device first; sync is optional.",
+  "textWeight": "Text weight",
+  "tasks": "Tasks",
+  "today": "Today",
+  "tomorrow": "Tomorrow",
+  "yesterday": "Yesterday",
+  "nextWeek": "Next week",
+  "scheduled": "Scheduled",
+  "allTasks": "All",
+  "completed": "Completed",
+  "projects": "Projects",
+  "newProject": "New project",
+  "projectName": "Project name",
+  "rename": "Rename",
+  "deleteProject": "Delete project",
+  "deleteProjectBody": "“{name}” is deleted. Its tasks stay, without a project.",
+  "@deleteProjectBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "create": "Create",
+  "save": "Save",
+  "newTaskHint": "New task, then Enter",
+  "noTasksTitle": "Nothing here",
+  "noTasksBody": "Type a task in the field above and press Enter.",
+  "nothingTodayTitle": "Nothing due today",
+  "nothingTodayBody": "Tasks due today or overdue show up here.",
+  "noCompletedBody": "Finished tasks are kept here.",
+  "taskTitleHint": "Task",
+  "taskNotesHint": "Notes",
+  "project": "Project",
+  "noProject": "None",
+  "dueDate": "Due date",
+  "noDate": "No date",
+  "priority": "Priority",
+  "priorityNone": "None",
+  "priorityLow": "Low",
+  "priorityMedium": "Medium",
+  "priorityHigh": "High",
+  "repeat": "Repeat",
+  "repeatNone": "Never",
+  "repeatDaily": "Daily",
+  "repeatWeekly": "Weekly",
+  "repeatMonthly": "Monthly",
+  "repeatNeedsDate": "Repeating needs a due date.",
+  "subtasks": "Subtasks",
+  "addSubtask": "Add a subtask, then Enter",
+  "subtaskProgress": "{done} of {count}",
+  "@subtaskProgress": {
+    "placeholders": {
+      "done": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteTask": "Delete task",
+  "openSource": "Open source",
+  "sourceGone": "The highlight or note this task came from no longer exists.",
+  "statusTodo": "To do",
+  "statusDoing": "In progress",
+  "statusDone": "Done",
+  "listView": "List",
+  "boardView": "Board",
+  "makeTask": "Make a task",
+  "taskAdded": "Added to Tasks.",
+  "markDone": "Mark as done",
+  "markNotDone": "Mark as not done",
+  "previousMonth": "Previous month",
+  "nextMonth": "Next month",
+  "addCard": "Add a card",
+  "cardTitleHint": "Card title, then Enter",
+  "addList": "Add a list",
+  "listName": "List name",
+  "deleteList": "Delete list",
+  "labels": "Labels",
+  "list": "List",
+  "labelGreen": "Green",
+  "labelYellow": "Yellow",
+  "labelOrange": "Orange",
+  "labelRed": "Red",
+  "labelPurple": "Purple",
+  "labelBlue": "Blue",
+  "sync": "Sync",
+  "syncMethod": "Sync through",
+  "syncOff": "Off",
+  "syncFolder": "A shared folder",
+  "folder": "Folder",
+  "chooseFolder": "Choose…",
+  "noFolder": "Not chosen",
+  "syncFolderHint": "Pick a folder your devices share, such as one inside Google Drive, OneDrive or Syncthing. Each device keeps one small file there.",
+  "syncBookFiles": "Sync book files too",
+  "syncNow": "Sync now",
+  "syncing": "Syncing…",
+  "lastSynced": "Last synced {when}",
+  "@lastSynced": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "neverSynced": "Not synced yet",
+  "syncFailed": "Sync failed. Check that the folder exists and can be written to.",
+  "thisDevice": "This device",
+  "continueFrom": "Continue from page {page}, where you left off on {device}?",
+  "@continueFrom": {
+    "placeholders": {
+      "page": {
+        "type": "String"
+      },
+      "device": {
+        "type": "String"
+      }
+    }
+  },
+  "continueFromUnknown": "Continue from page {page}, where you left off on another device?",
+  "@continueFromUnknown": {
+    "placeholders": {
+      "page": {
+        "type": "String"
+      }
+    }
+  },
+  "go": "Go",
+  "dismiss": "Dismiss",
+  "sectionOf": "Section {section} of {count}",
+  "@sectionOf": {
+    "placeholders": {
+      "section": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "contents": "Contents",
+  "sectionN": "Section {section}",
+  "@sectionN": {
+    "placeholders": {
+      "section": {
+        "type": "String"
+      }
+    }
+  },
+  "textSettings": "Text",
+  "fontSize": "Size",
+  "lineSpacing": "Line spacing",
+  "columnWidth": "Width",
+  "previousSection": "Previous section",
+  "nextSection": "Next section",
+  "focusMode": "Focus mode",
+  "exitFocus": "Leave focus mode (Esc)",
+  "bookUnreadable": "This book couldn't be opened. Its file may be damaged.",
+  "pen": "Pen",
+  "handwriting": "Handwriting",
+  "mdHeading": "Heading",
+  "mdBold": "Bold",
+  "mdItalic": "Italic",
+  "mdStrike": "Strikethrough",
+  "mdBullets": "Bulleted list",
+  "mdNumbers": "Numbered list",
+  "mdChecklist": "Checklist",
+  "mdQuote": "Quote",
+  "mdCode": "Code",
+  "mdLink": "Link",
+  "mdDivider": "Divider",
+  "mdTable": "Table",
+  "goToPage": "Go to page",
+  "pageNumberHint": "1 to {count}",
+  "@pageNumberHint": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "drawTools": "Drawing tools",
+  "toolPen": "Pen",
+  "toolPencil": "Pencil",
+  "toolMarker": "Highlighter",
+  "toolEraser": "Eraser",
+  "toolShapes": "Shapes",
+  "shapeLine": "Line",
+  "shapeArrow": "Arrow",
+  "shapeRect": "Rectangle",
+  "shapeEllipse": "Ellipse",
+  "toolText": "Text",
+  "toolSticky": "Sticky note",
+  "toolPage": "Attach a page",
+  "undo": "Undo",
+  "redo": "Redo",
+  "thickness": "Thickness",
+  "notebooks": "Notebooks",
+  "newNotebook": "New notebook",
+  "notebookName": "Notebook name",
+  "newPage": "New page",
+  "deletePage": "Delete page",
+  "deleteNotebook": "Delete notebook",
+  "deleteNotebookBody": "“{name}” and all of its pages are deleted.",
+  "paper": "Paper",
+  "paperBlank": "Blank",
+  "paperLined": "Lined",
+  "paperGrid": "Grid",
+  "paperDots": "Dotted",
+  "noNotebooksTitle": "No notebooks yet",
+  "noNotebooksBody": "Make a notebook to write, type and draw on its pages.",
+  "emptyNotebookBody": "This notebook has no pages yet.",
+  "stickyNote": "Sticky note",
+  "stickyHint": "Write on the note…",
+  "attachedPage": "Attached page",
+  "pageGone": "The attached page no longer exists.",
+  "textHint": "Type here",
+  "add": "Add",
+  "selectNotebook": "Pick a notebook from the list, or make a new one.",
+  "@deleteNotebookBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "toolFountain": "Fountain pen",
+  "toolBrush": "Brush",
+  "reading": "Reading",
+  "scrollSpeed": "Mouse wheel speed",
+  "smoothScrolling": "Smooth scrolling in PDFs",
+  "slower": "Slower",
+  "faster": "Faster",
+  "syncGoogle": "Google Drive",
+  "syncMicrosoft": "OneDrive",
+  "clientId": "Client ID",
+  "clientSecret": "Client secret",
+  "ownKeysHint": "Varagh ships without keys of its own. You register an app with the provider once, for free, and paste its keys here. Your data then goes only to your own account.",
+  "howToGetKeys": "How to get the keys",
+  "signInWithBrowser": "Sign in with browser",
+  "waitingForBrowser": "Waiting for the browser…",
+  "signedIn": "Signed in",
+  "signOut": "Sign out",
+  "signInFailed": "Sign-in didn't complete. Check the keys and try again.",
+  "signInDonePage": "Signed in. You can close this window and return to Varagh.",
+  "syncFailedCloud": "Sync failed. Check your connection, or sign in again.",
+  "close": "Close",
+  "googleGuide": "1. Open console.cloud.google.com and create a new project.\n2. In “APIs & Services” → “Library”, find “Google Drive API” and press Enable.\n3. Open “OAuth consent screen”. Choose External, enter an app name and your email, and add your own Google address under Test users.\n4. In “Credentials” → “Create credentials” → “OAuth client ID”, choose the type “Desktop app”.\n5. Copy the Client ID and Client secret it shows and paste them here.\n6. Press “Sign in with browser” and approve.\n\nWhile the app is in Testing, Google asks you to sign in again every 7 days. Pressing “Publish app” on the consent screen removes that.",
+  "microsoftGuide": "1. Open portal.azure.com and go to “App registrations” → “New registration”.\n2. Enter a name. Under Supported account types choose one that includes personal Microsoft accounts.\n3. Under Redirect URI choose “Public client/native (mobile & desktop)” and enter http://localhost\n4. Press Register. Then open “Authentication” and turn on “Allow public client flows”.\n5. Copy the “Application (client) ID” from the Overview page and paste it here. There is no secret.\n6. Press “Sign in with browser” and approve.\n\nIf the portal says you need a directory, creating a free Azure account gives you one."
+}
