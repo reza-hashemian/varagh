@@ -42,10 +42,19 @@ jobs:
       - run: flutter build linux --release
       - run: cp packaging/linux/install.sh packaging/linux/uninstall.sh assets/icon/varagh.png build/linux/x64/release/bundle/
       - run: tar -C build/linux/x64/release -czf varagh-linux-x64.tar.gz --transform 's/^bundle/varagh/' bundle
+      # The package takes its version from the tag (v1.2.3 -> 1.2.3) and
+      # gets a fixed file name, so the "latest release" link stays the same.
+      - run: |
+          version=0.0.0
+          case "$GITHUB_REF" in refs/tags/v*) version=${GITHUB_REF_NAME#v} ;; esac
+          sh packaging/linux/build-deb.sh "$version" .
+          mv "varagh_${version}_amd64.deb" varagh-linux-amd64.deb
       - uses: actions/upload-artifact@v4
         with:
           name: varagh-linux-x64
-          path: varagh-linux-x64.tar.gz
+          path: |
+            varagh-linux-x64.tar.gz
+            varagh-linux-amd64.deb
 
   android:
     runs-on: ubuntu-latest
@@ -87,4 +96,5 @@ jobs:
           files: |
             varagh-windows-x64.zip
             varagh-linux-x64.tar.gz
+            varagh-linux-amd64.deb
             varagh-android.apk

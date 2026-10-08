@@ -15,7 +15,8 @@ platform it has been built and run on so far; the others are untested.
 | | |
 |---|---|
 | Windows | [varagh-windows-x64.zip](https://github.com/reza-hashemian/varagh/releases/latest/download/varagh-windows-x64.zip) |
-| Linux | [varagh-linux-x64.tar.gz](https://github.com/reza-hashemian/varagh/releases/latest/download/varagh-linux-x64.tar.gz) |
+| Debian, Ubuntu | [varagh-linux-amd64.deb](https://github.com/reza-hashemian/varagh/releases/latest/download/varagh-linux-amd64.deb) |
+| Other Linux | [varagh-linux-x64.tar.gz](https://github.com/reza-hashemian/varagh/releases/latest/download/varagh-linux-x64.tar.gz) |
 | Android | [varagh-android.apk](https://github.com/reza-hashemian/varagh/releases/latest/download/varagh-android.apk) |
 
 These links always point at the newest release. Every version is on the
@@ -23,8 +24,11 @@ These links always point at the newest release. Every version is on the
 
 - **Windows:** unzip anywhere and run `varagh.exe`. It has not been run on
   Windows yet; reports are welcome.
-- **Linux:** unpack, then run `sh install.sh` inside the folder to add
-  Varagh to the application menu, or run `./varagh` directly.
+- **Debian, Ubuntu:** `sudo apt install ./varagh-linux-amd64.deb`. It is
+  built on Ubuntu 24.04, so it needs a system at least that recent
+  (Debian 13 or later).
+- **Other Linux:** unpack the archive, then run `sh install.sh` inside the
+  folder to add Varagh to the application menu, or run `./varagh` directly.
 - **Android:** open the APK on the phone and allow installing from that
   source. It is signed with a test key and has not been tried on a device
   yet.
@@ -101,6 +105,9 @@ sh packaging/linux/install.sh    # adds Varagh to the application menu
 
 `packaging/linux/uninstall.sh` removes it again and leaves your library
 alone.
+
+To make a `.deb` instead: `sh packaging/linux/build-deb.sh 1.0.0` writes it
+to `dist/`.
 
 **Windows** (on Windows, with Visual Studio's "Desktop development with
 C++" workload)
