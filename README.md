@@ -10,6 +10,25 @@ platform it has been built and run on so far; the others are untested.
 کتاب‌خوانی برای PDF و کتاب که یادداشت‌ها، دفترها و کارهایت را هم نگه
 می‌دارد. رابط فارسی و انگلیسی دارد، با تقویم شمسی و چیدمان راست‌به‌چپ.
 
+## Download · دانلود
+
+| | |
+|---|---|
+| Windows | [varagh-windows-x64.zip](https://github.com/reza-hashemian/varagh/releases/latest/download/varagh-windows-x64.zip) |
+| Linux | [varagh-linux-x64.tar.gz](https://github.com/reza-hashemian/varagh/releases/latest/download/varagh-linux-x64.tar.gz) |
+| Android | [varagh-android.apk](https://github.com/reza-hashemian/varagh/releases/latest/download/varagh-android.apk) |
+
+These links always point at the newest release. Every version is on the
+[releases page](https://github.com/reza-hashemian/varagh/releases).
+
+- **Windows:** unzip anywhere and run `varagh.exe`. It has not been run on
+  Windows yet; reports are welcome.
+- **Linux:** unpack, then run `sh install.sh` inside the folder to add
+  Varagh to the application menu, or run `./varagh` directly.
+- **Android:** open the APK on the phone and allow installing from that
+  source. It is signed with a test key and has not been tried on a device
+  yet.
+
 ## What it does
 
 **Reading**
