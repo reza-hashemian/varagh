@@ -21,6 +21,6 @@ extension HighlightColorSwatch on HighlightColor {
     HighlightColor.purple => const Color(0xFF8A4FD8),
   };
 
-  /// Translucent color laid over the page text with multiply blending.
+  /// Translucent color laid over the page text, darkening it like a marker.
   Color get marker => swatch.withValues(alpha: 0.5);
 }

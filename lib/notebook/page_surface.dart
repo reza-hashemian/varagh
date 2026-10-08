@@ -98,7 +98,14 @@ class LiveMarkPainter extends CustomPainter {
     final unit = size.width / notebookPageSize.width;
     // In a layer for the same reason as the page: smooth edges everywhere.
     canvas.saveLayer(Offset.zero & size, Paint());
-    paintMark(canvas, mark, (x, y) => Offset(x * unit, y * unit), unit);
+    // This layer is empty, so there is no paper under the mark to darken.
+    paintMark(
+      canvas,
+      mark,
+      (x, y) => Offset(x * unit, y * unit),
+      unit,
+      onPaper: false,
+    );
     canvas.restore();
   }
 

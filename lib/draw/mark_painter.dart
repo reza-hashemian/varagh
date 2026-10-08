@@ -11,14 +11,31 @@ bool startsRtl(String text) {
   return strong != null && !RegExp('[A-Za-z]').hasMatch(strong);
 }
 
+/// Paint that darkens an opaque backdrop the way a see-through [color]
+/// would under multiply blending.
+///
+/// Multiply itself reads the picture back for every shape drawn with it,
+/// and with a page full of highlights those copies pile up and smear the
+/// page while it scrolls. Over an opaque backdrop, modulating by the color
+/// mixed with white comes to exactly the same result without reading back.
+Paint highlighterPaint(Color color) => Paint()
+  ..blendMode = BlendMode.modulate
+  ..color = Color.lerp(
+    const Color(0xFFFFFFFF),
+    color.withValues(alpha: 1),
+    color.a,
+  )!;
+
 /// Draws [mark]. [at] maps a page point to canvas coordinates and [unit] is
-/// how many canvas pixels one page point covers.
+/// how many canvas pixels one page point covers. [onPaper] says the canvas
+/// already holds an opaque page for a highlighter to darken.
 void paintMark(
   Canvas canvas,
   Mark mark,
   Offset Function(double x, double y) at,
   double unit, {
   String fontFamily = 'Vazirmatn',
+  bool onPaper = true,
 }) {
   final p = mark.points;
   if (p.length < 2) return;
@@ -45,7 +62,7 @@ void paintMark(
   }
 
   if (mark.isFreehand) {
-    _paintStroke(canvas, mark, at, unit);
+    _paintStroke(canvas, mark, at, unit, onPaper);
     return;
   }
 
@@ -83,6 +100,7 @@ void _paintStroke(
   Mark mark,
   Offset Function(double x, double y) at,
   double unit,
+  bool onPaper,
 ) {
   final p = mark.points;
   final points = _relax([
@@ -99,15 +117,14 @@ void _paintStroke(
     case MarkTool.marker:
       // A highlighter: broad, see-through, and it darkens what is under it
       // instead of covering it.
+      final color = mark.color.withValues(alpha: 0.38);
       canvas.drawPath(
         _curve(points),
-        Paint()
+        (onPaper ? highlighterPaint(color) : (Paint()..color = color))
           ..style = PaintingStyle.stroke
           ..strokeWidth = width
           ..strokeJoin = StrokeJoin.round
-          ..strokeCap = StrokeCap.square
-          ..blendMode = BlendMode.multiply
-          ..color = mark.color.withValues(alpha: 0.38),
+          ..strokeCap = StrokeCap.square,
       );
     case MarkTool.pencil:
       // Graphite: a soft core with two fainter, slightly wandering lines

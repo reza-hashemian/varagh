@@ -423,7 +423,6 @@ class _ReaderScreenState extends State<ReaderScreen>
       y,
     ).toRectInDocument(page: page, pageRect: pageRect).topLeft;
 
-    final paint = Paint()..blendMode = BlendMode.multiply;
     for (final annotation in _byPage[page.pageNumber] ?? const <Annotation>[]) {
       final r = _placeOf(annotation);
       switch (annotation.kind) {
@@ -438,7 +437,7 @@ class _ReaderScreenState extends State<ReaderScreen>
             _paintPageIcon(canvas, at(r[0], r[1]), unit);
           }
         case AnnotationKind.highlight:
-          paint.color = annotation.color.marker;
+          final paint = highlighterPaint(annotation.color.marker);
           for (var i = 0; i + 3 < r.length; i += 4) {
             canvas.drawRect(
               PdfRect(
