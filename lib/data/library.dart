@@ -1043,14 +1043,79 @@ class Library {
     'reading_state': ['book_id', 'device_id'],
   };
 
-  /// Every synced row, tombstones included, keyed by table.
-  Map<String, List<Map<String, Object?>>> exportRows() => {
-    for (final table in syncTables.keys)
-      table: [
-        for (final row in db.select('SELECT * FROM $table'))
-          Map<String, Object?>.of(row),
-      ],
+  /// The rows of each table that belong to one book: the book, what was
+  /// marked on it, where each device is in it, and its notes and notebook.
+  /// Devices all go along, to name the ones those positions came from.
+  static const _bookRows = <String, String>{
+    'books': 'id = ?1',
+    'devices': '?1 IS NOT NULL',
+    'notes': 'book_id = ?1',
+    'notebooks': 'book_id = ?1',
+    'pages': 'notebook_id IN (SELECT id FROM notebooks WHERE book_id = ?1)',
+    'annotations': 'book_id = ?1',
+    'reading_state': 'book_id = ?1',
   };
+
+  /// Every synced row, tombstones included, keyed by table. With [bookId],
+  /// only the rows that belong to that book.
+  Map<String, List<Map<String, Object?>>> exportRows({String? bookId}) => {
+    for (final table in syncTables.keys)
+      if (bookId == null)
+        table: [
+          for (final row in db.select('SELECT * FROM $table'))
+            Map<String, Object?>.of(row),
+        ]
+      else if (_bookRows[table] case final where?)
+        table: [
+          for (final row in db.select('SELECT * FROM $table WHERE $where', [
+            bookId,
+          ]))
+            Map<String, Object?>.of(row),
+        ],
+  };
+
+  /// Folds in the rows of a backup file. It merges like a sync, except
+  /// that a book in the file which was removed from this device comes back
+  /// with everything on it, since importing it is asking for it.
+  int importRows(Map<String, Object?> tables) {
+    final removed = {
+      for (final row in db.select('SELECT id FROM books WHERE deleted = 1'))
+        row['id'],
+    };
+    Iterable<Map<Object?, Object?>> rowsOf(String table) =>
+        (tables[table] is List ? tables[table]! as List : const [])
+            .whereType<Map<Object?, Object?>>();
+    final revived = {
+      for (final row in rowsOf('books'))
+        if (row['deleted'] == 0 && removed.contains(row['id'])) row['id'],
+    };
+    if (revived.isEmpty) return mergeRows(tables);
+
+    // Removing the book stamped its rows later than the file's copies, so
+    // those are stamped now to win the merge.
+    final now = _now;
+    final notebooks = {
+      for (final row in rowsOf('notebooks'))
+        if (revived.contains(row['book_id'])) row['id'],
+    };
+    List<Object?> restamped(String table, bool Function(Map row) belongs) => [
+      for (final row in rowsOf(table))
+        belongs(row) ? {...row, 'updated_at': now} : row,
+    ];
+    bool ofBook(Map row) => revived.contains(row['book_id']);
+    return mergeRows({
+      ...tables,
+      'books': restamped('books', (row) => revived.contains(row['id'])),
+      'notes': restamped('notes', ofBook),
+      'notebooks': restamped('notebooks', ofBook),
+      'pages': restamped(
+        'pages',
+        (row) => notebooks.contains(row['notebook_id']),
+      ),
+      'annotations': restamped('annotations', ofBook),
+      'reading_state': restamped('reading_state', ofBook),
+    });
+  }
 
   /// Folds rows exported by another device into this one. For each row the
   /// copy edited most recently wins as a whole; rows only the other side

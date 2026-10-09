@@ -74,6 +74,13 @@ These links always point at the newest release. Every version is on the
 - Everything is stored on the device first; sync is optional and there is
   no server in between
 
+**Export**
+
+- A PDF with the highlights, handwriting, shapes, typed text and sticky
+  notes you tick put onto its pages; the book's own text stays selectable
+- One book, or the whole library, as a single `.varagh` file to import on
+  another device
+
 ## Cloud sync uses your own keys
 
 Varagh ships without API keys. To sync through Google Drive or OneDrive you

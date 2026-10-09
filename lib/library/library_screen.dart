@@ -9,7 +9,9 @@ import '../data/importer.dart';
 import '../data/models.dart';
 import '../home_shell.dart';
 import '../l10n/app_localizations.dart';
+import '../reader/pdf_export_dialog.dart';
 import '../text/text_book.dart';
+import 'backup_actions.dart';
 
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
@@ -148,6 +150,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
                     itemBuilder: (context, i) => _BookTile(
                       book: books[i],
                       onOpen: () => openBook(context, books[i]),
+                      onExportPdf: () => showPdfExportDialog(context, books[i]),
+                      onExport: () => exportBackupFrom(context, book: books[i]),
                       onRemove: () => _confirmRemove(books[i]),
                     ),
                   ),
@@ -301,11 +305,15 @@ class _BookTile extends StatelessWidget {
   const _BookTile({
     required this.book,
     required this.onOpen,
+    required this.onExportPdf,
+    required this.onExport,
     required this.onRemove,
   });
 
   final Book book;
   final VoidCallback onOpen;
+  final VoidCallback onExportPdf;
+  final VoidCallback onExport;
   final VoidCallback onRemove;
 
   Future<void> _showMenu(BuildContext context, Offset position) async {
@@ -318,9 +326,20 @@ class _BookTile extends StatelessWidget {
         position & Size.zero,
         Offset.zero & overlay.size,
       ),
-      items: [PopupMenuItem(value: 'remove', child: Text(l.remove))],
+      items: [
+        if (book.isPdf) PopupMenuItem(value: 'pdf', child: Text(l.exportPdf)),
+        PopupMenuItem(value: 'export', child: Text(l.exportBook)),
+        PopupMenuItem(value: 'remove', child: Text(l.remove)),
+      ],
     );
-    if (choice == 'remove') onRemove();
+    switch (choice) {
+      case 'pdf':
+        onExportPdf();
+      case 'export':
+        onExport();
+      case 'remove':
+        onRemove();
+    }
   }
 
   @override

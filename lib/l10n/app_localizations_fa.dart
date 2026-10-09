@@ -859,4 +859,75 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get microsoftGuide =>
       '۱. به portal.azure.com برو ← «App registrations» ← «New registration».\n۲. یک اسم بنویس. در Supported account types گزینه‌ای را انتخاب کن که حساب شخصی مایکروسافت را هم شامل شود.\n۳. در Redirect URI نوع «Public client/native (mobile & desktop)» را انتخاب کن و بنویس http://localhost\n۴. Register را بزن. بعد «Authentication» را باز کن و «Allow public client flows» را روشن کن.\n۵. «Application (client) ID» را از صفحهٔ Overview کپی کن و اینجا بگذار. این یکی secret ندارد.\n۶. «ورود با مرورگر» را بزن و اجازه بده.\n\nاگر پنل گفت دایرکتوری لازم است، ساختن حساب رایگان Azure آن را می‌دهد.';
+
+  @override
+  String get exportPdf => 'خروجی PDF';
+
+  @override
+  String get exportPdfHint =>
+      'انتخاب کن چه چیزهایی روی صفحه‌ها بیاید. متن خود کتاب قابل انتخاب می‌ماند.';
+
+  @override
+  String get shapes => 'شکل‌ها';
+
+  @override
+  String get typedText => 'متن تایپ‌شده';
+
+  @override
+  String get stickyNotes => 'یادداشت‌های چسبان';
+
+  @override
+  String get annotatedPagesOnly => 'فقط صفحه‌هایی که چیزی رویشان هست';
+
+  @override
+  String get nothingToExport => 'هنوز چیزی روی این کتاب علامت نزده‌ای.';
+
+  @override
+  String get export => 'خروجی';
+
+  @override
+  String get exporting => 'در حال ساخت خروجی…';
+
+  @override
+  String get exportSaved => 'ذخیره شد.';
+
+  @override
+  String get exportFailed => 'خروجی ساخته نشد.';
+
+  @override
+  String get backup => 'پشتیبان';
+
+  @override
+  String get exportBook => 'خروجی برای دستگاه دیگر';
+
+  @override
+  String get exportLibrary => 'خروجی از همه‌چیز';
+
+  @override
+  String get exportLibraryHint =>
+      'یک فایل شامل همهٔ کتاب‌ها و هایلایت‌هایشان، به‌علاوهٔ یادداشت‌ها، دفترها و کارها.';
+
+  @override
+  String get importBackup => 'وارد کردن فایل پشتیبان';
+
+  @override
+  String get importBackupHint =>
+      'محتوای فایل به این دستگاه اضافه می‌شود. چیزی از اینجا پاک نمی‌شود؛ اگر یک مورد در هر دو باشد، آنکه دیرتر ویرایش شده می‌ماند.';
+
+  @override
+  String get chooseFile => 'انتخاب فایل';
+
+  @override
+  String get importingBackup => 'در حال وارد کردن…';
+
+  @override
+  String importDone(String count) {
+    return 'وارد شد. کتاب‌های اضافه‌شده: $count';
+  }
+
+  @override
+  String get importNotBackup => 'این فایل پشتیبانِ ورق نیست.';
+
+  @override
+  String get importFailedBackup => 'فایل وارد نشد.';
 }

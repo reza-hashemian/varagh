@@ -19,6 +19,8 @@ import 'annotation_dialog.dart';
 import 'highlight_colors.dart';
 import 'highlights_panel.dart';
 import 'page_tint.dart';
+import 'pdf_export_dialog.dart';
+import 'sticky_painter.dart';
 import 'tint_sheet.dart';
 
 const _panelLayout = 820.0;
@@ -26,11 +28,8 @@ const _panelLayout = 820.0;
 /// Backdrop behind the pages under a paper preset, before the tint is applied.
 const _tintedBackdrop = Color(0xFFE2E2E2);
 
-/// Width of a sticky note and size of an attached-page icon, in PDF points,
-/// so both keep their size relative to the page at any zoom.
-const _stickyWidth = 132.0;
-const _stickyPadding = 8.0;
-const _stickyMinHeight = 44.0;
+/// Size of an attached-page icon in PDF points, so it keeps its size
+/// relative to the page at any zoom.
 const _pageIcon = Size(20, 26);
 
 /// Screen pixels between the points kept of a stroke, and how near, in PDF
@@ -430,7 +429,13 @@ class _ReaderScreenState extends State<ReaderScreen>
           paintMark(canvas, annotation.mark!, at, unit);
         case AnnotationKind.sticky:
           if (r.length >= 2) {
-            _paintSticky(canvas, annotation, at(r[0], r[1]), unit);
+            paintSticky(
+              canvas,
+              annotation,
+              at(r[0], r[1]),
+              unit,
+              height: _stickyHeight(annotation),
+            );
           }
         case AnnotationKind.page:
           if (r.length >= 2) {
@@ -456,83 +461,14 @@ class _ReaderScreenState extends State<ReaderScreen>
     }
   }
 
-  /// Lays out a sticky note's text at [unit] pixels per PDF point.
-  TextPainter _stickyText(Annotation sticky, double unit) => TextPainter(
-    text: TextSpan(
-      text: sticky.note,
-      style: TextStyle(
-        color: const Color(0xFF2B2A26),
-        fontSize: 8.5 * unit,
-        height: 1.5,
-        fontFamily: appFontFamily,
-      ),
-    ),
-    textDirection: startsRtl(sticky.note)
-        ? TextDirection.rtl
-        : TextDirection.ltr,
-  )..layout(maxWidth: (_stickyWidth - 2 * _stickyPadding) * unit);
-
-  /// Height of a sticky note in PDF points; it grows with its text.
+  /// Height of a sticky note in PDF points, kept until its text changes
+  /// since this is asked on every repaint.
   double _stickyHeight(Annotation sticky) {
-    // Laying out text is costly and this is asked on every repaint, so the
-    // answer is kept until the note's text changes.
     final cached = _stickyHeights[sticky.id];
     if (cached != null && cached.$1 == sticky.note) return cached.$2;
-    final painter = _stickyText(sticky, 1);
-    final laidOut = painter.height + 2 * _stickyPadding;
-    painter.dispose();
-    final height = laidOut < _stickyMinHeight ? _stickyMinHeight : laidOut;
+    final height = stickyHeight(sticky);
     _stickyHeights[sticky.id] = (sticky.note, height);
     return height;
-  }
-
-  void _paintSticky(
-    Canvas canvas,
-    Annotation sticky,
-    Offset corner,
-    double unit,
-  ) {
-    final rect =
-        corner & Size(_stickyWidth * unit, _stickyHeight(sticky) * unit);
-    final paper = Color.lerp(sticky.color.swatch, Colors.white, 0.42)!;
-    final fold = 11 * unit;
-    canvas.drawRect(
-      rect.shift(Offset(0, 2 * unit)),
-      Paint()
-        ..color = const Color(0x40000000)
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 3 * unit),
-    );
-    // The sheet with its bottom corner turned up, as a real one curls.
-    canvas.drawPath(
-      Path()
-        ..moveTo(rect.left, rect.top)
-        ..lineTo(rect.right, rect.top)
-        ..lineTo(rect.right, rect.bottom - fold)
-        ..lineTo(rect.right - fold, rect.bottom)
-        ..lineTo(rect.left, rect.bottom)
-        ..close(),
-      Paint()..color = paper,
-    );
-    canvas.drawPath(
-      Path()
-        ..moveTo(rect.right, rect.bottom - fold)
-        ..lineTo(rect.right - fold, rect.bottom - fold)
-        ..lineTo(rect.right - fold, rect.bottom)
-        ..close(),
-      Paint()..color = Color.lerp(sticky.color.swatch, Colors.black, 0.18)!,
-    );
-    final painter = _stickyText(sticky, unit);
-    final padding = _stickyPadding * unit;
-    painter.paint(
-      canvas,
-      Offset(
-        startsRtl(sticky.note)
-            ? rect.right - padding - painter.width
-            : rect.left + padding,
-        rect.top + padding,
-      ),
-    );
-    painter.dispose();
   }
 
   void _paintPageIcon(Canvas canvas, Offset corner, double unit) {
@@ -577,7 +513,7 @@ class _ReaderScreenState extends State<ReaderScreen>
   /// Size of a sticky note or attached-page icon in PDF points; null for
   /// annotations that aren't placed objects.
   Size? _boxOf(Annotation annotation) => switch (annotation.kind) {
-    AnnotationKind.sticky => Size(_stickyWidth, _stickyHeight(annotation)),
+    AnnotationKind.sticky => Size(stickyWidth, _stickyHeight(annotation)),
     AnnotationKind.page => _pageIcon,
     _ => null,
   };
@@ -893,7 +829,7 @@ class _ReaderScreenState extends State<ReaderScreen>
           y >= r[1] - height;
       final found = switch (annotation.kind) {
         AnnotationKind.ink => annotation.mark!.hit(x, y, _pickReach),
-        AnnotationKind.sticky => inBox(_stickyWidth, _stickyHeight(annotation)),
+        AnnotationKind.sticky => inBox(stickyWidth, _stickyHeight(annotation)),
         AnnotationKind.page => inBox(_pageIcon.width, _pageIcon.height),
         AnnotationKind.highlight => () {
           for (var i = 0; i + 3 < r.length; i += 4) {
@@ -1328,6 +1264,13 @@ class _ReaderScreenState extends State<ReaderScreen>
             tooltip: l.drawTools,
             active: _draw,
             onPressed: _ready ? () => _setDraw(!_draw) : null,
+          ),
+          MacIconButton(
+            icon: CupertinoIcons.square_arrow_up,
+            tooltip: l.exportPdf,
+            onPressed: _fileExists
+                ? () => showPdfExportDialog(context, widget.book)
+                : null,
           ),
           MacIconButton(
             icon: CupertinoIcons.sidebar_right,

@@ -399,5 +399,34 @@
   "syncFailedCloud": "Sync failed. Check your connection, or sign in again.",
   "close": "Close",
   "googleGuide": "1. Open console.cloud.google.com and create a new project.\n2. In “APIs & Services” → “Library”, find “Google Drive API” and press Enable.\n3. Open “OAuth consent screen”. Choose External, enter an app name and your email, and add your own Google address under Test users.\n4. In “Credentials” → “Create credentials” → “OAuth client ID”, choose the type “Desktop app”.\n5. Copy the Client ID and Client secret it shows and paste them here.\n6. Press “Sign in with browser” and approve.\n\nWhile the app is in Testing, Google asks you to sign in again every 7 days. Pressing “Publish app” on the consent screen removes that.",
-  "microsoftGuide": "1. Open portal.azure.com and go to “App registrations” → “New registration”.\n2. Enter a name. Under Supported account types choose one that includes personal Microsoft accounts.\n3. Under Redirect URI choose “Public client/native (mobile & desktop)” and enter http://localhost\n4. Press Register. Then open “Authentication” and turn on “Allow public client flows”.\n5. Copy the “Application (client) ID” from the Overview page and paste it here. There is no secret.\n6. Press “Sign in with browser” and approve.\n\nIf the portal says you need a directory, creating a free Azure account gives you one."
+  "microsoftGuide": "1. Open portal.azure.com and go to “App registrations” → “New registration”.\n2. Enter a name. Under Supported account types choose one that includes personal Microsoft accounts.\n3. Under Redirect URI choose “Public client/native (mobile & desktop)” and enter http://localhost\n4. Press Register. Then open “Authentication” and turn on “Allow public client flows”.\n5. Copy the “Application (client) ID” from the Overview page and paste it here. There is no secret.\n6. Press “Sign in with browser” and approve.\n\nIf the portal says you need a directory, creating a free Azure account gives you one.",
+  "exportPdf": "Export PDF",
+  "exportPdfHint": "Choose what is put onto the pages. The book's own text stays selectable.",
+  "shapes": "Shapes",
+  "typedText": "Typed text",
+  "stickyNotes": "Sticky notes",
+  "annotatedPagesOnly": "Only the pages with something on them",
+  "nothingToExport": "Nothing has been marked on this book yet.",
+  "export": "Export",
+  "exporting": "Exporting…",
+  "exportSaved": "Saved.",
+  "exportFailed": "The export couldn't be made.",
+  "backup": "Backup",
+  "exportBook": "Export for another device",
+  "exportLibrary": "Export everything",
+  "exportLibraryHint": "One file with every book and its highlights, plus your notes, notebooks and tasks.",
+  "importBackup": "Import a backup file",
+  "importBackupHint": "Adds what the file holds to this device. Nothing here is deleted; where both have the same item, the more recently edited one is kept.",
+  "chooseFile": "Choose file",
+  "importingBackup": "Importing…",
+  "importDone": "Imported. Books added: {count}",
+  "@importDone": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "importNotBackup": "This isn't a Varagh backup file.",
+  "importFailedBackup": "The file couldn't be imported."
 }

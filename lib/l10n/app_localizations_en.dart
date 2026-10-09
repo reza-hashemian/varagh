@@ -859,4 +859,75 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get microsoftGuide =>
       '1. Open portal.azure.com and go to “App registrations” → “New registration”.\n2. Enter a name. Under Supported account types choose one that includes personal Microsoft accounts.\n3. Under Redirect URI choose “Public client/native (mobile & desktop)” and enter http://localhost\n4. Press Register. Then open “Authentication” and turn on “Allow public client flows”.\n5. Copy the “Application (client) ID” from the Overview page and paste it here. There is no secret.\n6. Press “Sign in with browser” and approve.\n\nIf the portal says you need a directory, creating a free Azure account gives you one.';
+
+  @override
+  String get exportPdf => 'Export PDF';
+
+  @override
+  String get exportPdfHint =>
+      'Choose what is put onto the pages. The book\'s own text stays selectable.';
+
+  @override
+  String get shapes => 'Shapes';
+
+  @override
+  String get typedText => 'Typed text';
+
+  @override
+  String get stickyNotes => 'Sticky notes';
+
+  @override
+  String get annotatedPagesOnly => 'Only the pages with something on them';
+
+  @override
+  String get nothingToExport => 'Nothing has been marked on this book yet.';
+
+  @override
+  String get export => 'Export';
+
+  @override
+  String get exporting => 'Exporting…';
+
+  @override
+  String get exportSaved => 'Saved.';
+
+  @override
+  String get exportFailed => 'The export couldn\'t be made.';
+
+  @override
+  String get backup => 'Backup';
+
+  @override
+  String get exportBook => 'Export for another device';
+
+  @override
+  String get exportLibrary => 'Export everything';
+
+  @override
+  String get exportLibraryHint =>
+      'One file with every book and its highlights, plus your notes, notebooks and tasks.';
+
+  @override
+  String get importBackup => 'Import a backup file';
+
+  @override
+  String get importBackupHint =>
+      'Adds what the file holds to this device. Nothing here is deleted; where both have the same item, the more recently edited one is kept.';
+
+  @override
+  String get chooseFile => 'Choose file';
+
+  @override
+  String get importingBackup => 'Importing…';
+
+  @override
+  String importDone(String count) {
+    return 'Imported. Books added: $count';
+  }
+
+  @override
+  String get importNotBackup => 'This isn\'t a Varagh backup file.';
+
+  @override
+  String get importFailedBackup => 'The file couldn\'t be imported.';
 }

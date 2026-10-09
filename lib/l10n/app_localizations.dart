@@ -1693,6 +1693,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'1. Open portal.azure.com and go to “App registrations” → “New registration”.\n2. Enter a name. Under Supported account types choose one that includes personal Microsoft accounts.\n3. Under Redirect URI choose “Public client/native (mobile & desktop)” and enter http://localhost\n4. Press Register. Then open “Authentication” and turn on “Allow public client flows”.\n5. Copy the “Application (client) ID” from the Overview page and paste it here. There is no secret.\n6. Press “Sign in with browser” and approve.\n\nIf the portal says you need a directory, creating a free Azure account gives you one.'**
   String get microsoftGuide;
+
+  /// No description provided for @exportPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Export PDF'**
+  String get exportPdf;
+
+  /// No description provided for @exportPdfHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose what is put onto the pages. The book\'s own text stays selectable.'**
+  String get exportPdfHint;
+
+  /// No description provided for @shapes.
+  ///
+  /// In en, this message translates to:
+  /// **'Shapes'**
+  String get shapes;
+
+  /// No description provided for @typedText.
+  ///
+  /// In en, this message translates to:
+  /// **'Typed text'**
+  String get typedText;
+
+  /// No description provided for @stickyNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Sticky notes'**
+  String get stickyNotes;
+
+  /// No description provided for @annotatedPagesOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the pages with something on them'**
+  String get annotatedPagesOnly;
+
+  /// No description provided for @nothingToExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing has been marked on this book yet.'**
+  String get nothingToExport;
+
+  /// No description provided for @export.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get export;
+
+  /// No description provided for @exporting.
+  ///
+  /// In en, this message translates to:
+  /// **'Exporting…'**
+  String get exporting;
+
+  /// No description provided for @exportSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved.'**
+  String get exportSaved;
+
+  /// No description provided for @exportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The export couldn\'t be made.'**
+  String get exportFailed;
+
+  /// No description provided for @backup.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup'**
+  String get backup;
+
+  /// No description provided for @exportBook.
+  ///
+  /// In en, this message translates to:
+  /// **'Export for another device'**
+  String get exportBook;
+
+  /// No description provided for @exportLibrary.
+  ///
+  /// In en, this message translates to:
+  /// **'Export everything'**
+  String get exportLibrary;
+
+  /// No description provided for @exportLibraryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'One file with every book and its highlights, plus your notes, notebooks and tasks.'**
+  String get exportLibraryHint;
+
+  /// No description provided for @importBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Import a backup file'**
+  String get importBackup;
+
+  /// No description provided for @importBackupHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Adds what the file holds to this device. Nothing here is deleted; where both have the same item, the more recently edited one is kept.'**
+  String get importBackupHint;
+
+  /// No description provided for @chooseFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose file'**
+  String get chooseFile;
+
+  /// No description provided for @importingBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Importing…'**
+  String get importingBackup;
+
+  /// No description provided for @importDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported. Books added: {count}'**
+  String importDone(String count);
+
+  /// No description provided for @importNotBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'This isn\'t a Varagh backup file.'**
+  String get importNotBackup;
+
+  /// No description provided for @importFailedBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'The file couldn\'t be imported.'**
+  String get importFailedBackup;
 }
 
 class _AppLocalizationsDelegate

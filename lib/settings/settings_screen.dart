@@ -7,6 +7,7 @@ import '../core/app_state.dart';
 import '../core/mac_widgets.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
+import '../library/backup_actions.dart';
 import '../sync/sync_controller.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -143,6 +144,37 @@ class SettingsScreen extends StatelessWidget {
                     ],
                   ),
                   const _SyncGroup(),
+                  MacGroup(
+                    header: l.backup,
+                    children: [
+                      MacRow(
+                        label: l.exportLibrary,
+                        control: OutlinedButton(
+                          onPressed: () => exportBackupFrom(context),
+                          child: Text(l.export),
+                        ),
+                        below: Text(
+                          l.exportLibraryHint,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      MacRow(
+                        label: l.importBackup,
+                        control: OutlinedButton(
+                          onPressed: () => importBackupInto(context),
+                          child: Text(l.chooseFile),
+                        ),
+                        below: Text(
+                          l.importBackupHint,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                   MacGroup(
                     header: l.about,
                     children: [
