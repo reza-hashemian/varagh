@@ -107,6 +107,7 @@
   "edit": "Edit",
   "selectNote": "Pick a note from the list, or start a new one.",
   "highlight": "Highlight",
+  "highlightColor": "Highlight color",
   "highlightHint": "Select text on the page first, then highlight it.",
   "noHighlightsTitle": "No highlights yet",
   "noHighlightsBody": "Select a sentence and press the highlighter. It shows up here with its page.",

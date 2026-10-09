@@ -470,6 +470,12 @@ abstract class AppLocalizations {
   /// **'Highlight'**
   String get highlight;
 
+  /// No description provided for @highlightColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlight color'**
+  String get highlightColor;
+
   /// No description provided for @highlightHint.
   ///
   /// In en, this message translates to:

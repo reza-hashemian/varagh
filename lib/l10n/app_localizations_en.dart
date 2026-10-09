@@ -212,6 +212,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get highlight => 'Highlight';
 
   @override
+  String get highlightColor => 'Highlight color';
+
+  @override
   String get highlightHint =>
       'Select text on the page first, then highlight it.';
 

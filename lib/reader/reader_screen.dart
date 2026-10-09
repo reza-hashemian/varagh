@@ -944,10 +944,14 @@ class _ReaderScreenState extends State<ReaderScreen>
       annotation: annotation,
       onChanged: _reloadAnnotations,
     );
-    if (color != null && color != _color) {
-      _color = color;
-      _library.setSetting('reader.highlightColor', color.name);
-    }
+    if (color != null) _setColor(color);
+  }
+
+  /// Picks the color new highlights and sticky notes get.
+  void _setColor(HighlightColor color) {
+    if (color == _color) return;
+    setState(() => _color = color);
+    _library.setSetting('reader.highlightColor', color.name);
   }
 
   void _goToAnnotation(Annotation annotation, {bool animate = true}) {
@@ -1291,6 +1295,32 @@ class _ReaderScreenState extends State<ReaderScreen>
               style: _hasSelection
                   ? IconButton.styleFrom(backgroundColor: _color.marker)
                   : null,
+            ),
+          ),
+          PopupMenuButton<HighlightColor>(
+            tooltip: l.highlightColor,
+            position: PopupMenuPosition.under,
+            onSelected: _setColor,
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                enabled: false,
+                child: HighlightColorPicker(
+                  value: _color,
+                  onChanged: (color) => Navigator.of(context).pop(color),
+                ),
+              ),
+            ],
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Container(
+                width: 16,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: _color.swatch,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: theme.colorScheme.outlineVariant),
+                ),
+              ),
             ),
           ),
           MacIconButton(

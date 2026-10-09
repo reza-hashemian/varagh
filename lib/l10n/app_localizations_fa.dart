@@ -213,6 +213,9 @@ class AppLocalizationsFa extends AppLocalizations {
   String get highlight => 'هایلایت';
 
   @override
+  String get highlightColor => 'رنگ هایلایت';
+
+  @override
   String get highlightHint => 'اول متن را روی صفحه انتخاب کن، بعد هایلایتش کن.';
 
   @override

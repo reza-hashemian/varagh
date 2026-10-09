@@ -139,35 +139,7 @@ class _AnnotationDialogState extends State<_AnnotationDialog> {
                     ],
                   ),
                 ),
-                Row(
-                  spacing: 10,
-                  children: [
-                    for (final color in HighlightColor.values)
-                      Semantics(
-                        button: true,
-                        selected: color == _color,
-                        label: color.name,
-                        child: InkWell(
-                          onTap: () => _setColor(color),
-                          customBorder: const CircleBorder(),
-                          child: Container(
-                            width: 24,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              color: color.swatch,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: color == _color
-                                    ? theme.colorScheme.onSurface
-                                    : Colors.transparent,
-                                width: 2,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
+                HighlightColorPicker(value: _color, onChanged: _setColor),
                 TextField(
                   controller: _note,
                   minLines: 3,

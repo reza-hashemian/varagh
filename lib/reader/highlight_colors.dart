@@ -1,4 +1,4 @@
-import 'dart:ui';
+import 'package:flutter/material.dart';
 
 import '../data/models.dart';
 
@@ -23,4 +23,51 @@ extension HighlightColorSwatch on HighlightColor {
 
   /// Translucent color laid over the page text, darkening it like a marker.
   Color get marker => swatch.withValues(alpha: 0.5);
+}
+
+/// A row of color dots with the current one ringed.
+class HighlightColorPicker extends StatelessWidget {
+  const HighlightColorPicker({
+    super.key,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final HighlightColor value;
+  final ValueChanged<HighlightColor> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      spacing: 10,
+      children: [
+        for (final color in HighlightColor.values)
+          Semantics(
+            button: true,
+            selected: color == value,
+            label: color.name,
+            child: InkWell(
+              onTap: () => onChanged(color),
+              customBorder: const CircleBorder(),
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: color.swatch,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: color == value
+                        ? theme.colorScheme.onSurface
+                        : Colors.transparent,
+                    width: 2,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 }
