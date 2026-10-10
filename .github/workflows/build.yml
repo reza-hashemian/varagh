@@ -70,9 +70,30 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
       - run: flutter pub get
-      # Signed with the debug key: fine for installing by hand, not for a
-      # store, and an update only installs over a build signed the same way.
-      - run: flutter build apk --release
+      # Signed with the same key every time: Android only installs an
+      # update over a build that carries the same signature.
+      - name: Set up the signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo "::error::ANDROID_KEYSTORE_BASE64 and ANDROID_KEYSTORE_PASSWORD secrets are not set"
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > android/upload-keystore.jks
+          {
+            echo "storeFile=upload-keystore.jks"
+            echo "storePassword=$KEYSTORE_PASSWORD"
+            echo "keyAlias=varagh"
+            echo "keyPassword=$KEYSTORE_PASSWORD"
+          } > android/key.properties
+      # The version name comes from the tag (v1.2.3 -> 1.2.3) and the
+      # version code from the run number, so it only ever goes up.
+      - run: |
+          version=0.0.0
+          case "$GITHUB_REF" in refs/tags/v*) version=${GITHUB_REF_NAME#v} ;; esac
+          flutter build apk --release --build-name="$version" --build-number="$GITHUB_RUN_NUMBER"
       - run: cp build/app/outputs/flutter-apk/app-release.apk varagh-android.apk
       - uses: actions/upload-artifact@v4
         with:
