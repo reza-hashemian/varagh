@@ -209,24 +209,40 @@ double distanceToSegment(
 
 /// Turns raw pointer positions into the points of a smooth stroke.
 ///
-/// A mouse reports whole pixels, so a slow stroke sampled at every event is
-/// a staircase. The sampler pulls each new point only part of the way
-/// toward the pointer (which averages out the steps and hand jitter) and
-/// drops points closer together than [minDistance]. It also records how
-/// heavy the stroke is at each point: from stylus pressure when there is
-/// one, otherwise from speed, slower being heavier.
+/// A finger or stylus is followed exactly, so the small turns of
+/// handwriting keep their shape. A mouse reports whole pixels, so a slow
+/// stroke sampled at every event is a staircase; it is followed with a
+/// filter that lags while the mouse moves slowly, which is where the steps
+/// show. The sampler also records how heavy the stroke is at each point:
+/// from stylus pressure when there is one, otherwise from speed, slower
+/// being heavier.
 class StrokeSampler {
-  StrokeSampler({required this.minDistance, this.smoothing = 0.55});
+  StrokeSampler({required this.pixel, this.precise = false});
 
-  /// Least spacing between kept points, in page points.
-  final double minDistance;
+  /// Size of a screen pixel in page points.
+  final double pixel;
 
-  /// 0 follows the pointer exactly; closer to 1 lags and smooths more.
-  final double smoothing;
+  /// Whether positions come finer than a pixel, as from a finger or stylus.
+  final bool precise;
+
+  /// Least spacing between kept points, in screen pixels. Wider for a
+  /// mouse, to span the steps of its whole pixels.
+  double get _spacing => precise ? 1.5 : 3;
+
+  /// Least length, in screen pixels, of the two arms of a turn for it to
+  /// count as one; shorter than this is jitter.
+  static const _turnArm = 0.6;
 
   final points = <double>[];
   final widths = <double>[];
   var _weight = 0.9;
+
+  /// Where the pointer last was, and where the filter following it is.
+  var _rawX = 0.0, _rawY = 0.0, _x = 0.0, _y = 0.0;
+
+  /// Where the stroke would turn if it changed direction now: the filter's
+  /// position one arm back.
+  var _turnX = 0.0, _turnY = 0.0;
 
   /// Whether any point came with real stylus pressure.
   bool hasPressure = false;
@@ -235,31 +251,59 @@ class StrokeSampler {
   bool add(double x, double y, {double? pressure}) {
     if (points.isEmpty) {
       points.addAll([x, y]);
+      _rawX = _x = _turnX = x;
+      _rawY = _y = _turnY = y;
       if (pressure != null) hasPressure = true;
       _weight = pressure == null ? 0.9 : 0.3 + pressure * 1.1;
       widths.add(_weight);
       return true;
     }
-    final lastX = points[points.length - 2], lastY = points[points.length - 1];
-    final nx = lastX + (x - lastX) * (1 - smoothing);
-    final ny = lastY + (y - lastY) * (1 - smoothing);
-    final distance = math.sqrt(
-      (nx - lastX) * (nx - lastX) + (ny - lastY) * (ny - lastY),
-    );
-    if (distance < minDistance) return false;
+    // Events arrive at a steady rate, so distance per event is speed.
+    final step =
+        math.sqrt((x - _rawX) * (x - _rawX) + (y - _rawY) * (y - _rawY)) /
+        pixel;
+    _rawX = x;
+    _rawY = y;
+    // Up to a pixel per event the filter closes a third of the gap; from
+    // five pixels on it is on the pointer.
+    final follow = precise ? 1.0 : (0.3 + 0.7 * (step - 1) / 4).clamp(0.3, 1.0);
+    _x += (x - _x) * follow;
+    _y += (y - _y) * follow;
 
     final double target;
     if (pressure != null) {
       hasPressure = true;
       target = 0.3 + pressure * 1.1;
     } else {
-      // Events arrive at a steady rate, so distance per event is speed.
-      target = (1.3 - distance / (minDistance * 7)).clamp(0.4, 1.25);
+      target = (1.3 - step / 50).clamp(0.4, 1.25);
     }
     _weight = _weight * 0.72 + target * 0.28;
-    points.addAll([nx, ny]);
-    widths.add(_weight);
-    return true;
+
+    final lastX = points[points.length - 2], lastY = points[points.length - 1];
+    var added = false;
+    // A sharp turn is kept as a point of its own. Spacing alone would step
+    // over it and round the corner off.
+    final ax = _turnX - lastX, ay = _turnY - lastY;
+    final bx = _x - _turnX, by = _y - _turnY;
+    final a = math.sqrt(ax * ax + ay * ay), b = math.sqrt(bx * bx + by * by);
+    final arm = _turnArm * pixel;
+    if (a >= arm && b >= arm && ax * bx + ay * by < 0.5 * a * b) {
+      points.addAll([_turnX, _turnY]);
+      widths.add(_weight);
+      added = true;
+    }
+    final dx = _x - points[points.length - 2],
+        dy = _y - points[points.length - 1];
+    if (dx * dx + dy * dy >= _spacing * _spacing * pixel * pixel) {
+      points.addAll([_x, _y]);
+      widths.add(_weight);
+      added = true;
+    }
+    if (added || b >= arm) {
+      _turnX = _x;
+      _turnY = _y;
+    }
+    return added;
   }
 
   /// Ends the stroke exactly where the pointer was lifted.

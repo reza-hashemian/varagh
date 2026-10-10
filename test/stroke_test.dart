@@ -15,9 +15,27 @@ List<Offset> mousePath() => [
     ),
 ];
 
-Mark stroke(MarkTool tool, {bool weighted = false}) {
-  final sampler = StrokeSampler(minDistance: 3.2);
-  final path = mousePath();
+/// Small handwriting with teeth, like the letter sin: a zigzag [tooth]
+/// pixels wide and high, the pointer moving [step] pixels per event.
+List<Offset> teethPath({double tooth = 6, double step = 2.5}) {
+  final length = tooth * 2 * 6;
+  return [
+    for (var d = 0.0; d <= length; d += step)
+      Offset(
+        30 + d / 2,
+        40 + ((d / tooth).floor().isEven ? d % tooth : tooth - d % tooth),
+      ),
+  ];
+}
+
+Mark stroke(
+  MarkTool tool, {
+  bool weighted = false,
+  List<Offset>? along,
+  bool precise = false,
+}) {
+  final sampler = StrokeSampler(pixel: 1, precise: precise);
+  final path = along ?? mousePath();
   for (final point in path) {
     sampler.add(point.dx, point.dy);
   }
@@ -34,12 +52,12 @@ Mark stroke(MarkTool tool, {bool weighted = false}) {
 void main() {
   test('sampling a pixel staircase leaves a smooth, sparse line', () {
     final raw = mousePath();
-    final sampler = StrokeSampler(minDistance: 3.2);
+    final sampler = StrokeSampler(pixel: 1);
     for (final point in raw) {
       sampler.add(point.dx, point.dy);
     }
     final p = sampler.points;
-    expect(p.length ~/ 2, lessThan(raw.length ~/ 2));
+    expect(p.length ~/ 2, lessThan(raw.length * 0.6));
     expect(sampler.widths.length, p.length ~/ 2);
 
     // Direction changes between consecutive segments stay gentle: no
@@ -60,8 +78,32 @@ void main() {
     }
   });
 
+  test('the teeth of small handwriting survive sampling and smoothing', () {
+    for (final step in [0.7, 1.6, 2.5]) {
+      final mark = stroke(
+        MarkTool.pen,
+        along: teethPath(step: step),
+        precise: true,
+      );
+      final p = mark.points;
+      final drawn = relaxStroke([
+        for (var i = 0; i + 1 < p.length; i += 2) Offset(p[i], p[i + 1]),
+      ], 0.4);
+      // Every tooth still reaches most of its 6 pixels. At the quickest
+      // speed the pointer itself only reports 5 of them.
+      for (var tooth = 1; tooth < 5; tooth++) {
+        final ys = [
+          for (final point in drawn)
+            if (point.dx >= 30 + tooth * 6 && point.dx <= 36 + tooth * 6)
+              point.dy,
+        ];
+        expect(ys.reduce(math.max) - ys.reduce(math.min), greaterThan(4));
+      }
+    }
+  });
+
   test('the stroke ends where the pointer was lifted', () {
-    final sampler = StrokeSampler(minDistance: 3.2)..add(0, 0);
+    final sampler = StrokeSampler(pixel: 1)..add(0, 0);
     for (var x = 1.0; x <= 50; x++) {
       sampler.add(x, 0);
     }
@@ -70,8 +112,8 @@ void main() {
   });
 
   test('a slower stroke is heavier, and pressure overrides speed', () {
-    final slow = StrokeSampler(minDistance: 1)..add(0, 0);
-    final fast = StrokeSampler(minDistance: 1)..add(0, 0);
+    final slow = StrokeSampler(pixel: 1)..add(0, 0);
+    final fast = StrokeSampler(pixel: 1)..add(0, 0);
     for (var i = 1; i <= 40; i++) {
       slow.add(i * 3.0, 0);
       fast.add(i * 30.0, 0);
@@ -79,7 +121,7 @@ void main() {
     expect(slow.widths.last, greaterThan(fast.widths.last));
     expect(slow.hasPressure, isFalse);
 
-    final pressed = StrokeSampler(minDistance: 1)..add(0, 0, pressure: 1);
+    final pressed = StrokeSampler(pixel: 1)..add(0, 0, pressure: 1);
     for (var i = 1; i <= 40; i++) {
       pressed.add(i * 30.0, 0, pressure: 1);
     }
@@ -100,7 +142,7 @@ void main() {
     final canvas = Canvas(recorder);
     const scale = 2.0;
     canvas.drawRect(
-      const Rect.fromLTWH(0, 0, 920, 1180),
+      const Rect.fromLTWH(0, 0, 920, 1700),
       Paint()..color = const Color(0xFFFFFEFA),
     );
 
@@ -131,7 +173,18 @@ void main() {
       );
     }
 
-    final image = await recorder.endRecording().toImage(920, 1180);
+    // Below them, handwriting teeth at three drawing speeds.
+    for (final step in [0.7, 1.6, 2.5]) {
+      final dy = row++ * 95.0 - 40;
+      paintMark(
+        canvas,
+        stroke(MarkTool.pen, along: teethPath(step: step), precise: true),
+        (x, y) => Offset(x * scale, (y + dy) * scale),
+        scale,
+      );
+    }
+
+    final image = await recorder.endRecording().toImage(920, 1700);
     final bytes = await image.toByteData(format: ImageByteFormat.png);
     expect(bytes, isNotNull);
     final out = Platform.environment['STROKE_PNG'];

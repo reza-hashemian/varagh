@@ -13,6 +13,7 @@ import '../data/library.dart';
 import '../data/models.dart';
 import '../l10n/app_localizations.dart';
 import '../reader/page_tint.dart';
+import '../translate/translation_dialog.dart';
 import 'text_book.dart';
 
 /// Reader for reflowable books (EPUB, Markdown, HTML, plain text): one
@@ -34,6 +35,9 @@ class _TextReaderScreenState extends State<TextReaderScreen>
   late final Library _library = AppScope.read(context).library;
   final _scroll = ScrollController();
   final _keys = FocusNode();
+
+  /// The text selected on the page; empty when none is.
+  final _selected = ValueNotifier('');
 
   TextBook? _book;
   var _failed = false;
@@ -89,6 +93,7 @@ class _TextReaderScreenState extends State<TextReaderScreen>
     _flush();
     _scroll.dispose();
     _keys.dispose();
+    _selected.dispose();
     super.dispose();
   }
 
@@ -399,6 +404,23 @@ class _TextReaderScreenState extends State<TextReaderScreen>
       body = Directionality(
         textDirection: book.isRtl ? TextDirection.rtl : TextDirection.ltr,
         child: SelectionArea(
+          onSelectionChanged: (content) =>
+              _selected.value = content?.plainText.trim() ?? '',
+          contextMenuBuilder: (context, region) =>
+              AdaptiveTextSelectionToolbar.buttonItems(
+                anchors: region.contextMenuAnchors,
+                buttonItems: [
+                  ...region.contextMenuButtonItems,
+                  if (_selected.value.isNotEmpty)
+                    ContextMenuButtonItem(
+                      label: l.translate,
+                      onPressed: () {
+                        region.hideToolbar();
+                        showTranslation(context, _selected.value);
+                      },
+                    ),
+                ],
+              ),
           child: SingleChildScrollView(
             controller: _scroll,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
@@ -482,6 +504,16 @@ class _TextReaderScreenState extends State<TextReaderScreen>
                     icon: CupertinoIcons.list_bullet,
                     tooltip: l.contents,
                     onPressed: book == null || count < 2 ? null : _showContents,
+                  ),
+                  ValueListenableBuilder(
+                    valueListenable: _selected,
+                    builder: (context, selected, _) => MacIconButton(
+                      icon: CupertinoIcons.globe,
+                      tooltip: selected.isEmpty ? l.translateHint : l.translate,
+                      onPressed: selected.isEmpty
+                          ? null
+                          : () => showTranslation(context, selected),
+                    ),
                   ),
                   MacIconButton(
                     icon: CupertinoIcons.textformat_size,

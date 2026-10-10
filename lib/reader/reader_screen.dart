@@ -15,6 +15,7 @@ import '../draw/draw_tools.dart';
 import '../draw/mark.dart';
 import '../draw/mark_painter.dart';
 import '../notebook/page_editor.dart';
+import '../translate/translation_dialog.dart';
 import 'annotation_dialog.dart';
 import 'highlight_colors.dart';
 import 'highlights_panel.dart';
@@ -25,6 +26,10 @@ import 'tint_sheet.dart';
 
 const _panelLayout = 820.0;
 
+/// Below this width the toolbar keeps its main buttons and puts the rest
+/// in a menu, since a phone held upright has no room for them all.
+const _fullToolbar = 700.0;
+
 /// Backdrop behind the pages under a paper preset, before the tint is applied.
 const _tintedBackdrop = Color(0xFFE2E2E2);
 
@@ -32,10 +37,26 @@ const _tintedBackdrop = Color(0xFFE2E2E2);
 /// relative to the page at any zoom.
 const _pageIcon = Size(20, 26);
 
-/// Screen pixels between the points kept of a stroke, and how near, in PDF
-/// points, a tap or the eraser must be to pick a drawing.
-const _samplePixels = 3.2;
+/// How near, in PDF points, a tap or the eraser must be to pick a drawing.
 const _pickReach = 5.0;
+
+/// Something the reader's toolbar offers, as a button or a menu entry.
+/// [hint] is the tooltip while it is disabled, saying what it waits for.
+class _ToolbarAction {
+  const _ToolbarAction({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+    this.hint,
+    this.active = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final String? hint;
+  final bool active;
+  final VoidCallback? onPressed;
+}
 
 class ReaderScreen extends StatefulWidget {
   const ReaderScreen({super.key, required this.book, this.annotationId});
@@ -413,6 +434,14 @@ class _ReaderScreenState extends State<ReaderScreen>
     if (mounted) _reloadAnnotations();
   }
 
+  Future<void> _translateSelection() async {
+    final selection = _selection;
+    if (selection == null || !selection.hasSelectedText) return;
+    final selected = await selection.getSelectedText();
+    final text = selected.replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (text.isNotEmpty && mounted) await showTranslation(context, text);
+  }
+
   void _paintHighlights(Canvas canvas, Rect pageRect, PdfPage page) {
     final unit = pageRect.width / page.width;
     Offset at(double x, double y) => PdfRect(
@@ -659,7 +688,8 @@ class _ReaderScreenState extends State<ReaderScreen>
     } else if (_tools.markTool != null && _tools.tool != DrawTool.text) {
       // Pages are laid out one PDF point to a pixel at zoom 1.
       _sampler = StrokeSampler(
-        minDistance: _samplePixels / _controller.currentZoom,
+        pixel: 1 / _controller.currentZoom,
+        precise: isPrecise(event),
       )..add(point.x, point.y, pressure: stylusPressure(event));
       _live = _tools.mark([point.x, point.y]);
       _controller.invalidate();
@@ -1091,6 +1121,15 @@ class _ReaderScreenState extends State<ReaderScreen>
                 },
               ),
             );
+            items.add(
+              ContextMenuButtonItem(
+                label: l.translate,
+                onPressed: () {
+                  params.dismissContextMenu();
+                  _translateSelection();
+                },
+              ),
+            );
           },
         ),
       );
@@ -1205,6 +1244,54 @@ class _ReaderScreenState extends State<ReaderScreen>
         ),
       );
     }
+    final compact = MediaQuery.sizeOf(context).width < _fullToolbar;
+    // Shown as buttons where there is room for them, otherwise in a menu.
+    final more = [
+      _ToolbarAction(
+        icon: CupertinoIcons.globe,
+        label: l.translate,
+        hint: l.translateHint,
+        onPressed: _hasSelection ? _translateSelection : null,
+      ),
+      _ToolbarAction(
+        icon: CupertinoIcons.square_arrow_up,
+        label: l.exportPdf,
+        onPressed: _fileExists
+            ? () => showPdfExportDialog(context, widget.book)
+            : null,
+      ),
+      _ToolbarAction(
+        icon: CupertinoIcons.sidebar_right,
+        label: l.highlights,
+        active: wide && _showPanel,
+        onPressed: () => _togglePanel(wide: wide),
+      ),
+      _ToolbarAction(
+        icon: CupertinoIcons.minus,
+        label: l.zoomOut,
+        onPressed: _ready ? () => _controller.zoomDown() : null,
+      ),
+      _ToolbarAction(
+        icon: CupertinoIcons.plus,
+        label: l.zoomIn,
+        onPressed: _ready ? () => _controller.zoomUp() : null,
+      ),
+      _ToolbarAction(
+        icon: CupertinoIcons.fullscreen,
+        label: l.focusMode,
+        onPressed: () => setState(() {
+          _focus = true;
+          _draw = false;
+        }),
+      ),
+      _ToolbarAction(
+        icon: CupertinoIcons.circle_lefthalf_fill,
+        label: l.pageColor,
+        active: !tint.isIdentity,
+        onPressed: () =>
+            showTintSheet(context, initial: _state.tint, onChanged: _setTint),
+      ),
+    ];
     return Scaffold(
       appBar: MacToolbar(
         leading: MacIconButton(
@@ -1265,47 +1352,46 @@ class _ReaderScreenState extends State<ReaderScreen>
             active: _draw,
             onPressed: _ready ? () => _setDraw(!_draw) : null,
           ),
-          MacIconButton(
-            icon: CupertinoIcons.square_arrow_up,
-            tooltip: l.exportPdf,
-            onPressed: _fileExists
-                ? () => showPdfExportDialog(context, widget.book)
-                : null,
-          ),
-          MacIconButton(
-            icon: CupertinoIcons.sidebar_right,
-            tooltip: l.highlights,
-            active: wide && _showPanel,
-            onPressed: () => _togglePanel(wide: wide),
-          ),
-          MacIconButton(
-            icon: CupertinoIcons.minus,
-            tooltip: l.zoomOut,
-            onPressed: _ready ? () => _controller.zoomDown() : null,
-          ),
-          MacIconButton(
-            icon: CupertinoIcons.plus,
-            tooltip: l.zoomIn,
-            onPressed: _ready ? () => _controller.zoomUp() : null,
-          ),
-          MacIconButton(
-            icon: CupertinoIcons.fullscreen,
-            tooltip: l.focusMode,
-            onPressed: () => setState(() {
-              _focus = true;
-              _draw = false;
-            }),
-          ),
-          MacIconButton(
-            icon: CupertinoIcons.circle_lefthalf_fill,
-            tooltip: l.pageColor,
-            active: !tint.isIdentity,
-            onPressed: () => showTintSheet(
-              context,
-              initial: _state.tint,
-              onChanged: _setTint,
-            ),
-          ),
+          if (compact)
+            PopupMenuButton<VoidCallback>(
+              tooltip: l.moreActions,
+              position: PopupMenuPosition.under,
+              icon: const Icon(CupertinoIcons.ellipsis),
+              onSelected: (action) => action(),
+              itemBuilder: (context) => [
+                for (final item in more)
+                  PopupMenuItem(
+                    value: item.onPressed,
+                    enabled: item.onPressed != null,
+                    height: 38,
+                    child: Row(
+                      spacing: 10,
+                      children: [
+                        Icon(
+                          item.icon,
+                          size: 18,
+                          color: item.onPressed == null
+                              ? theme.disabledColor
+                              : item.active
+                              ? theme.colorScheme.primary
+                              : null,
+                        ),
+                        Text(item.label),
+                      ],
+                    ),
+                  ),
+              ],
+            )
+          else
+            for (final item in more)
+              MacIconButton(
+                icon: item.icon,
+                tooltip: item.onPressed == null
+                    ? item.hint ?? item.label
+                    : item.label,
+                active: item.active,
+                onPressed: item.onPressed,
+              ),
         ],
       ),
       body: Column(

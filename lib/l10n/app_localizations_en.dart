@@ -930,4 +930,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importFailedBackup => 'The file couldn\'t be imported.';
+
+  @override
+  String get translate => 'Translate';
+
+  @override
+  String get translateHint => 'Select text first, then translate it.';
+
+  @override
+  String get translateFailed =>
+      'Couldn\'t translate. Check your connection and try again.';
+
+  @override
+  String get retry => 'Try again';
+
+  @override
+  String get copy => 'Copy';
+
+  @override
+  String get moreActions => 'More';
 }

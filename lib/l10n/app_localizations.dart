@@ -1825,6 +1825,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The file couldn\'t be imported.'**
   String get importFailedBackup;
+
+  /// No description provided for @translate.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate'**
+  String get translate;
+
+  /// No description provided for @translateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select text first, then translate it.'**
+  String get translateHint;
+
+  /// No description provided for @translateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t translate. Check your connection and try again.'**
+  String get translateFailed;
+
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get retry;
+
+  /// No description provided for @copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get copy;
+
+  /// No description provided for @moreActions.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get moreActions;
 }
 
 class _AppLocalizationsDelegate

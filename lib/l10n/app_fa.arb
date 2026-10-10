@@ -287,5 +287,11 @@
   "importingBackup": "در حال وارد کردن…",
   "importDone": "وارد شد. کتاب‌های اضافه‌شده: {count}",
   "importNotBackup": "این فایل پشتیبانِ ورق نیست.",
-  "importFailedBackup": "فایل وارد نشد."
+  "importFailedBackup": "فایل وارد نشد.",
+  "translate": "ترجمه",
+  "translateHint": "اول متن را انتخاب کن، بعد ترجمه‌اش کن.",
+  "translateFailed": "ترجمه انجام نشد. اتصال اینترنت را بررسی کن و دوباره امتحان کن.",
+  "retry": "دوباره",
+  "copy": "کپی",
+  "moreActions": "بیشتر"
 }

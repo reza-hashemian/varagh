@@ -95,6 +95,9 @@ void paintMark(
   }
 }
 
+/// How far smoothing may move a point of a stroke, in page points.
+const _relaxReach = 0.4;
+
 void _paintStroke(
   Canvas canvas,
   Mark mark,
@@ -103,9 +106,9 @@ void _paintStroke(
   bool onPaper,
 ) {
   final p = mark.points;
-  final points = _relax([
+  final points = relaxStroke([
     for (var i = 0; i + 1 < p.length; i += 2) at(p[i], p[i + 1]),
-  ]);
+  ], _relaxReach * unit);
   final width = math.max(0.6, mark.drawnWidth * unit);
 
   if (points.length == 1) {
@@ -172,9 +175,10 @@ void _paintStroke(
 }
 
 /// Evens out the last of the wobble a whole-pixel pointer leaves, by
-/// pulling each point toward its neighbors twice. The ends stay put, so
-/// the stroke still starts and stops where it was drawn.
-List<Offset> _relax(List<Offset> points) {
+/// pulling each point toward its neighbors twice. No point moves further
+/// than [reach], so the turns of small handwriting stay as drawn, and the
+/// ends stay put, so the stroke still starts and stops where it was drawn.
+List<Offset> relaxStroke(List<Offset> points, double reach) {
   if (points.length < 4) return points;
   var current = points;
   for (var pass = 0; pass < 2; pass++) {
@@ -185,7 +189,14 @@ List<Offset> _relax(List<Offset> points) {
       current.last,
     ];
   }
-  return current;
+  return [
+    for (var i = 0; i < points.length; i++)
+      switch (current[i] - points[i]) {
+        final shift when shift.distance > reach =>
+          points[i] + shift / shift.distance * reach,
+        _ => current[i],
+      },
+  ];
 }
 
 /// Unit normal to the stroke at point [i].

@@ -57,9 +57,7 @@ Future<String?> askMarkText(BuildContext context, {String initial = ''}) {
   );
 }
 
-/// Screen pixels between the points kept of a stroke, and how near, in
-/// page points, the eraser must pass to take a mark.
-const _samplePixels = 3.2;
+/// How near, in page points, the eraser must pass to take a mark.
 const _eraserReach = 6.0;
 
 /// Pressure of a pointer as 0..1 when it comes from a stylus that reports
@@ -72,6 +70,10 @@ double? stylusPressure(PointerEvent event) {
   if (!stylus || range <= 0) return null;
   return ((event.pressure - event.pressureMin) / range).clamp(0.0, 1.0);
 }
+
+/// Whether a pointer reports positions finer than a pixel. A mouse moves in
+/// whole pixels; a finger or stylus does not.
+bool isPrecise(PointerEvent event) => event.kind != PointerDeviceKind.mouse;
 
 const _undoDepth = 80;
 
@@ -177,7 +179,7 @@ class _PageEditorState extends State<PageEditor> {
       _redo.clear();
       _erase(x, y);
     } else if (_tools.tool != DrawTool.text) {
-      _sampler = StrokeSampler(minDistance: _samplePixels / unit)
+      _sampler = StrokeSampler(pixel: 1 / unit, precise: isPrecise(event))
         ..add(x, y, pressure: stylusPressure(event));
       setState(() => _live = _tools.mark([x, y]));
     }

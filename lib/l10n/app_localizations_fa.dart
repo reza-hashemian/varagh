@@ -930,4 +930,23 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get importFailedBackup => 'فایل وارد نشد.';
+
+  @override
+  String get translate => 'ترجمه';
+
+  @override
+  String get translateHint => 'اول متن را انتخاب کن، بعد ترجمه‌اش کن.';
+
+  @override
+  String get translateFailed =>
+      'ترجمه انجام نشد. اتصال اینترنت را بررسی کن و دوباره امتحان کن.';
+
+  @override
+  String get retry => 'دوباره';
+
+  @override
+  String get copy => 'کپی';
+
+  @override
+  String get moreActions => 'بیشتر';
 }

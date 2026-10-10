@@ -428,5 +428,11 @@
     }
   },
   "importNotBackup": "This isn't a Varagh backup file.",
-  "importFailedBackup": "The file couldn't be imported."
+  "importFailedBackup": "The file couldn't be imported.",
+  "translate": "Translate",
+  "translateHint": "Select text first, then translate it.",
+  "translateFailed": "Couldn't translate. Check your connection and try again.",
+  "retry": "Try again",
+  "copy": "Copy",
+  "moreActions": "More"
 }
