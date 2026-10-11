@@ -11,14 +11,17 @@ import '../text/text_book.dart';
 
 /// Books handed to the app by the system's "Open with".
 ///
-/// On desktop the file's path arrives as a launch argument. Android sends
-/// an intent instead; the activity copies what it points at into the cache
-/// and passes that copy's path over this channel.
+/// On Windows and Linux the file's path arrives as a launch argument.
+/// macOS sends an open event and Android an intent, and both pass a path
+/// over this channel; on Android it is of a copy the activity made in the
+/// cache, as the app can't read the original by path.
 const _channel = MethodChannel('app.varagh/open_with');
 
-/// The file the app was launched to open on Android, if any.
+final _viaChannel = Platform.isAndroid || Platform.isMacOS;
+
+/// The file the app was launched to open, where it comes by the channel.
 Future<String?> initialOpenWithFile() async {
-  if (!Platform.isAndroid) return null;
+  if (!_viaChannel) return null;
   try {
     return await _channel.invokeMethod<String>('initialFile');
   } on PlatformException {
@@ -30,7 +33,7 @@ Future<String?> initialOpenWithFile() async {
 
 /// Calls [onFile] for each file sent while the app is already running.
 void listenForOpenWith(void Function(String path) onFile) {
-  if (!Platform.isAndroid) return;
+  if (!_viaChannel) return;
   _channel.setMethodCallHandler((call) async {
     if (call.method == 'openFile') onFile(call.arguments as String);
   });
