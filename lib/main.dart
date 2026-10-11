@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -9,8 +8,8 @@ import 'package:pdfrx/pdfrx.dart';
 
 import 'core/app_state.dart';
 import 'core/db.dart';
+import 'core/open_with.dart';
 import 'core/theme.dart';
-import 'data/importer.dart';
 import 'data/library.dart';
 import 'home_shell.dart';
 import 'l10n/app_localizations.dart';
@@ -23,25 +22,22 @@ Future<void> main(List<String> args) async {
   await Directory(root.path).create(recursive: true);
   final db = openAppDatabase(p.join(root.path, 'varagh.db'));
   final state = AppState(Library(db, root.path));
-  await _openFromArguments(state, args);
+  await _openFromLaunch(state, args);
 
   runApp(VaraghApp(state: state));
   state.sync.syncNow();
+  registerOpenWith(state.library);
 }
 
-/// Lets the desktop app be launched with a book's path ("Open with"): the file
-/// joins the library and opens straight away.
-Future<void> _openFromArguments(AppState state, List<String> args) async {
-  for (final arg in args) {
-    final file = File(arg);
-    if (!file.existsSync()) continue;
+/// Lets the app be launched on a book ("Open with"): the file joins the
+/// library and opens straight away. Desktop passes its path as an argument.
+Future<void> _openFromLaunch(AppState state, List<String> args) async {
+  final sent = await initialOpenWithFile();
+  for (final path in [?sent, ...args]) {
+    if (!File(path).existsSync()) continue;
     try {
-      final result = await importBook(
-        state.library,
-        name: p.basename(arg),
-        bytes: file.openRead().map(Uint8List.fromList),
-      );
-      state.sessionBookId = result.book.id;
+      final book = await importOpenWithFile(state.library, path);
+      state.sessionBookId = book.id;
       state.reloadBooks();
     } catch (_) {
       // An unreadable file just leaves the app on the library.

@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
 
 import 'core/app_state.dart';
+import 'core/open_with.dart';
 import 'core/theme.dart';
 import 'data/models.dart';
 import 'l10n/app_localizations.dart';
@@ -45,9 +47,33 @@ class HomeShell extends StatefulWidget {
 }
 
 class _HomeShellState extends State<HomeShell> {
+  /// Opens a book sent by "Open with" while the app is running, in place
+  /// of whatever is on screen.
+  Future<void> _openSent(String path) async {
+    final state = AppScope.read(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final l = AppLocalizations.of(context);
+    final navigator = Navigator.of(context);
+    // Closed before the import, so the book that was open has let go of
+    // the session by the time the new one takes it.
+    navigator.popUntil((route) => route.isFirst);
+    final Book book;
+    try {
+      book = await importOpenWithFile(state.library, path);
+    } catch (_) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(l.importFailed(p.basename(path)))),
+      );
+      return;
+    }
+    state.reloadBooks();
+    if (mounted) openBook(context, book);
+  }
+
   @override
   void initState() {
     super.initState();
+    listenForOpenWith(_openSent);
     // Reopen the book that was on screen when the app last closed.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;

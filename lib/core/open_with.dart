@@ -1,0 +1,87 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'package:path/path.dart' as p;
+
+import '../data/importer.dart';
+import '../data/library.dart';
+import '../data/models.dart';
+import '../text/text_book.dart';
+
+/// Books handed to the app by the system's "Open with".
+///
+/// On desktop the file's path arrives as a launch argument. Android sends
+/// an intent instead; the activity copies what it points at into the cache
+/// and passes that copy's path over this channel.
+const _channel = MethodChannel('app.varagh/open_with');
+
+/// The file the app was launched to open on Android, if any.
+Future<String?> initialOpenWithFile() async {
+  if (!Platform.isAndroid) return null;
+  try {
+    return await _channel.invokeMethod<String>('initialFile');
+  } on PlatformException {
+    return null;
+  } on MissingPluginException {
+    return null;
+  }
+}
+
+/// Calls [onFile] for each file sent while the app is already running.
+void listenForOpenWith(void Function(String path) onFile) {
+  if (!Platform.isAndroid) return;
+  _channel.setMethodCallHandler((call) async {
+    if (call.method == 'openFile') onFile(call.arguments as String);
+  });
+}
+
+/// Adds the file at [path] to the library and returns its book. Throws if
+/// it can't be read or isn't a supported type.
+Future<Book> importOpenWithFile(Library library, String path) async {
+  final file = File(path);
+  try {
+    final result = await importBook(
+      library,
+      name: p.basename(path),
+      bytes: file.openRead().map(Uint8List.fromList),
+    );
+    return result.book;
+  } finally {
+    // On Android the file is only the activity's copy of what was sent.
+    if (Platform.isAndroid && file.existsSync()) file.deleteSync();
+  }
+}
+
+/// Lists the app under "Open with" for books on Windows, where there is no
+/// installer to do it. Done again only when the app has moved.
+Future<void> registerOpenWith(Library library) async {
+  if (!Platform.isWindows || !kReleaseMode) return;
+  final exe = Platform.resolvedExecutable;
+  if (library.setting('windows.openWith') == exe) return;
+
+  final key = 'HKCU\\Software\\Classes\\Applications\\${p.basename(exe)}';
+  Future<bool> add(List<String> args) async =>
+      (await Process.run('reg', ['add', ...args, '/f'])).exitCode == 0;
+  try {
+    var done = await add([key, '/v', 'FriendlyAppName', '/d', 'Varagh']);
+    done &= await add([
+      '$key\\shell\\open\\command',
+      '/ve',
+      '/d',
+      '"$exe" "%1"',
+    ]);
+    for (final extension in ['pdf', ...textFormats.keys]) {
+      done &= await add([
+        '$key\\SupportedTypes',
+        '/v',
+        '.$extension',
+        '/d',
+        '',
+      ]);
+    }
+    if (done) library.setSetting('windows.openWith', exe);
+  } catch (_) {
+    // Without the registry entry the app just isn't offered for books.
+  }
+}

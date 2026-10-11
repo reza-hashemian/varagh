@@ -186,11 +186,10 @@ class _ReaderScreenState extends State<ReaderScreen>
         ? null
         : _library.annotation(widget.annotationId!);
     final saved = _restore;
-    if (target != null) {
-      _goToAnnotation(target, animate: false);
-    } else if (saved != null) {
-      _jumpTo(saved);
-    }
+    // The saved position goes first even when a highlight is the target:
+    // it brings back the zoom the book was last read at.
+    if (saved != null) _jumpTo(saved);
+    if (target != null) _goToAnnotation(target, animate: false);
 
     _ready = true;
     _searcher = PdfTextSearcher(controller)..addListener(_onSearchChanged);
@@ -920,15 +919,20 @@ class _ReaderScreenState extends State<ReaderScreen>
     _library.setSetting('reader.highlightColor', color.name);
   }
 
+  /// Brings [annotation] to the middle of the view, at the zoom the reader
+  /// is already at.
   void _goToAnnotation(Annotation annotation, {bool animate = true}) {
     final r = annotation.rects;
     if (r.length < 4) {
       _controller.goToPage(pageNumber: annotation.page);
       return;
     }
-    _controller.goToRectInsidePage(
+    final spot = _controller.calcRectForRectInsidePage(
       pageNumber: annotation.page,
       rect: PdfRect(r[0], r[1], r[2], r[3]),
+    );
+    _controller.goTo(
+      _controller.calcMatrixFor(spot.center),
       duration: animate ? const Duration(milliseconds: 200) : Duration.zero,
     );
   }
