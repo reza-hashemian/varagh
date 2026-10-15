@@ -236,6 +236,14 @@ class _ReaderScreenState extends State<ReaderScreen>
     _pageCount = document.pages.length;
     _library.markOpened(widget.book.id, pageCount: _pageCount);
 
+    // The viewer is rebuilt when something above it in the tree changes
+    // shape; it then comes back where the reader was, not where the book
+    // was opened.
+    if (_ready) {
+      _jumpTo(_state);
+      return;
+    }
+
     final target = widget.annotationId == null
         ? null
         : _library.annotation(widget.annotationId!);
@@ -1224,12 +1232,13 @@ class _ReaderScreenState extends State<ReaderScreen>
           },
         ),
       );
-      if (_draw) {
-        // The overlay takes drags for drawing; the mouse wheel still
-        // scrolls and zooms the page underneath.
-        viewer = Stack(
-          children: [
-            viewer,
+      // The overlay takes drags for drawing; the mouse wheel still
+      // scrolls and zooms the page underneath. The stack stays when the pen
+      // is off, so the viewer isn't rebuilt each time it's toggled.
+      viewer = Stack(
+        children: [
+          viewer,
+          if (_draw)
             Positioned.fill(
               child: Listener(
                 behavior: HitTestBehavior.opaque,
@@ -1240,9 +1249,8 @@ class _ReaderScreenState extends State<ReaderScreen>
                 onPointerSignal: _controller.handlePointerSignalEvent,
               ),
             ),
-          ],
-        );
-      }
+        ],
+      );
       final filter = tint.filter;
       final filtered = filter == null
           ? viewer
@@ -1273,11 +1281,11 @@ class _ReaderScreenState extends State<ReaderScreen>
       );
     }
 
-    if (_draw && _fileExists) {
-      // The tool picker floats over the page, outside the page tint.
-      viewer = Stack(
-        children: [
-          Positioned.fill(child: viewer),
+    // The tool picker floats over the page, outside the page tint.
+    viewer = Stack(
+      children: [
+        Positioned.fill(child: viewer),
+        if (_draw && _fileExists)
           Positioned(
             left: 12,
             right: 12,
@@ -1291,9 +1299,8 @@ class _ReaderScreenState extends State<ReaderScreen>
               ),
             ),
           ),
-        ],
-      );
-    }
+      ],
+    );
 
     return CallbackShortcuts(
       bindings: {
