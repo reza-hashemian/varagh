@@ -100,11 +100,40 @@ jobs:
           name: varagh-android
           path: varagh-android.apk
 
-  # On a version tag, gathers the three builds into a release so they can
+  # Not signed with an Apple Developer ID, so on first launch macOS asks
+  # to confirm it: right-click the app and choose Open.
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: flutter pub get
+      - run: flutter test
+      - run: |
+          version=0.0.0
+          case "$GITHUB_REF" in refs/tags/v*) version=${GITHUB_REF_NAME#v} ;; esac
+          flutter build macos --release --build-name="$version" --build-number="$GITHUB_RUN_NUMBER"
+      # A disk image with the app next to a link to Applications, so it
+      # installs by dragging one onto the other.
+      - run: |
+          mkdir dmg
+          cp -R build/macos/Build/Products/Release/varagh.app dmg/
+          ln -s /Applications dmg/Applications
+          hdiutil create -volname varagh -srcfolder dmg -format UDZO varagh-macos.dmg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: varagh-macos
+          path: varagh-macos.dmg
+
+  # On a version tag, gathers the builds into a release so they can
   # be downloaded without signing in to GitHub.
   release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [windows, linux, android]
+    needs: [windows, linux, android, macos]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -119,3 +148,4 @@ jobs:
             varagh-linux-x64.tar.gz
             varagh-linux-amd64.deb
             varagh-android.apk
+            varagh-macos.dmg
