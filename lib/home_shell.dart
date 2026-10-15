@@ -5,17 +5,17 @@ import 'package:path/path.dart' as p;
 import 'core/app_state.dart';
 import 'core/open_with.dart';
 import 'core/theme.dart';
+import 'core/windows.dart';
 import 'data/models.dart';
 import 'l10n/app_localizations.dart';
 import 'library/library_screen.dart';
 import 'notebook/notebooks_screen.dart';
 import 'notebook/page_editor.dart';
 import 'notes/notes_screen.dart';
-import 'reader/reader_screen.dart';
+import 'reader/reader_desk.dart';
 import 'search/search_screen.dart';
 import 'settings/settings_screen.dart';
 import 'tasks/tasks_screen.dart';
-import 'text/text_reader_screen.dart';
 
 /// Opens [book] in the reader and remembers it as the open session.
 /// [annotationId] scrolls to that highlight once the book is ready.
@@ -23,17 +23,21 @@ Future<void> openBook(
   BuildContext context,
   Book book, {
   String? annotationId,
+}) => openDesk(context, [book], annotationId: annotationId);
+
+/// Opens [books] side by side; the desk remembers them as the session.
+Future<void> openDesk(
+  BuildContext context,
+  List<Book> books, {
+  String? annotationId,
 }) async {
   final state = AppScope.read(context);
-  state.sessionBookId = book.id;
   await Navigator.of(context).push(
     MaterialPageRoute<void>(
-      builder: (_) => book.isPdf
-          ? ReaderScreen(book: book, annotationId: annotationId)
-          : TextReaderScreen(book: book),
+      builder: (_) => ReaderDesk(books: books, annotationId: annotationId),
     ),
   );
-  state.sessionBookId = null;
+  state.sessionBookIds = const [];
   state.reloadBooks();
 }
 
@@ -78,21 +82,19 @@ class _HomeShellState extends State<HomeShell> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final state = AppScope.read(context);
-      final id = state.sessionBookId;
-      if (id == null) {
-        // No book was open; perhaps a notebook page was.
-        final pageId = state.library.setting('session.page');
-        if (pageId != null && state.library.page(pageId) != null) {
-          openNotebookPage(context, pageId);
-        }
+      final books = [
+        for (final id in state.sessionBookIds) ?state.library.book(id),
+      ];
+      if (books.isNotEmpty) {
+        openDesk(context, books);
         return;
       }
-      final book = state.library.book(id);
-      if (book == null) {
-        state.sessionBookId = null;
-        return;
+      state.sessionBookIds = const [];
+      // No book was open; perhaps a notebook page was.
+      final pageId = state.sessionPageId;
+      if (pageId != null && state.library.page(pageId) != null) {
+        openNotebookPage(context, pageId);
       }
-      openBook(context, book);
     });
   }
 
@@ -215,6 +217,20 @@ class _Sidebar extends StatelessWidget {
                   ],
                 ),
               ),
+              if (canOpenWindows)
+                _SidebarItem(
+                  icon: CupertinoIcons.macwindow,
+                  label: l.newWindow,
+                  selected: false,
+                  onTap: () async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    if (!await openNewWindow()) {
+                      messenger.showSnackBar(
+                        SnackBar(content: Text(l.newWindowFailed)),
+                      );
+                    }
+                  },
+                ),
               section(AppTab.settings),
               const SizedBox(height: 10),
             ],

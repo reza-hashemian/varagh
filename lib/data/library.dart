@@ -120,6 +120,11 @@ class Library {
 
   int get _now => _clock();
 
+  /// Changes whenever another connection, such as a second window of the
+  /// app, commits to the database.
+  int get dataVersion =>
+      db.select('PRAGMA data_version').first.values.first as int;
+
   // Settings
 
   String? setting(String key) {

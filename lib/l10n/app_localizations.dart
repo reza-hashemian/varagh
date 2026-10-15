@@ -1861,6 +1861,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'More'**
   String get moreActions;
+
+  /// No description provided for @openBeside.
+  ///
+  /// In en, this message translates to:
+  /// **'Open a book beside'**
+  String get openBeside;
+
+  /// No description provided for @moveToNewWindow.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to a new window'**
+  String get moveToNewWindow;
+
+  /// No description provided for @newWindow.
+  ///
+  /// In en, this message translates to:
+  /// **'New window'**
+  String get newWindow;
+
+  /// No description provided for @newWindowFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open a new window.'**
+  String get newWindowFailed;
+
+  /// No description provided for @findBookHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Find a book'**
+  String get findBookHint;
+
+  /// No description provided for @scrollTogether.
+  ///
+  /// In en, this message translates to:
+  /// **'Scroll together'**
+  String get scrollTogether;
 }
 
 class _AppLocalizationsDelegate

@@ -21,14 +21,17 @@ import 'highlight_colors.dart';
 import 'highlights_panel.dart';
 import 'page_tint.dart';
 import 'pdf_export_dialog.dart';
+import 'scroll_link.dart';
 import 'sticky_painter.dart';
 import 'tint_sheet.dart';
 
 const _panelLayout = 820.0;
 
-/// Below this width the toolbar keeps its main buttons and puts the rest
-/// in a menu, since a phone held upright has no room for them all.
-const _fullToolbar = 700.0;
+/// Width the toolbar needs for its title and back button, and for each
+/// button. Where there isn't room for them all, as on a phone held upright
+/// or a narrow pane, it keeps its main buttons and puts the rest in a menu.
+const _toolbarTitle = 200.0;
+const _toolbarButton = 50.0;
 
 /// Backdrop behind the pages under a paper preset, before the tint is applied.
 const _tintedBackdrop = Color(0xFFE2E2E2);
@@ -59,19 +62,42 @@ class _ToolbarAction {
 }
 
 class ReaderScreen extends StatefulWidget {
-  const ReaderScreen({super.key, required this.book, this.annotationId});
+  const ReaderScreen({
+    super.key,
+    required this.book,
+    this.annotationId,
+    this.onClose,
+    this.onOpenBeside,
+    this.onNewWindow,
+    this.link,
+  });
 
   final Book book;
 
   /// Highlight to scroll to once the book has loaded.
   final String? annotationId;
 
+  /// Set when the reader is one of several on a desk: closes just this
+  /// one, in place of going back.
+  final VoidCallback? onClose;
+
+  /// Opens another book beside this one; null when there is no room.
+  final VoidCallback? onOpenBeside;
+
+  /// Moves the book to a window of its own; null where there are none.
+  final VoidCallback? onNewWindow;
+
+  /// Scrolls this book together with the others on its desk when on;
+  /// null when it is alone.
+  final ScrollLink? link;
+
   @override
   State<ReaderScreen> createState() => _ReaderScreenState();
 }
 
 class _ReaderScreenState extends State<ReaderScreen>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver
+    implements LinkedReader {
   static const _saveDelay = Duration(milliseconds: 500);
 
   final _controller = PdfViewerController();
@@ -135,6 +161,10 @@ class _ReaderScreenState extends State<ReaderScreen>
   PdfTextSearcher? _searcher;
   var _finding = false;
 
+  /// Set while the view is being moved to follow a linked book, so the
+  /// move isn't passed back.
+  var _following = false;
+
   @override
   void initState() {
     super.initState();
@@ -156,11 +186,35 @@ class _ReaderScreenState extends State<ReaderScreen>
     _showPanel = _library.setting('reader.panel') == '1';
     _loadAnnotations();
     WidgetsBinding.instance.addObserver(this);
+    _joinLink(widget.link);
+  }
+
+  @override
+  void didUpdateWidget(ReaderScreen old) {
+    super.didUpdateWidget(old);
+    if (old.link == widget.link) return;
+    _leaveLink(old.link);
+    _joinLink(widget.link);
+  }
+
+  void _joinLink(ScrollLink? link) {
+    link?.join(this);
+    link?.addListener(_onLinkChanged);
+  }
+
+  void _leaveLink(ScrollLink? link) {
+    link?.leave(this);
+    link?.removeListener(_onLinkChanged);
+  }
+
+  void _onLinkChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _leaveLink(widget.link);
     _controller.removeListener(_onViewChanged);
     _searcher?.removeListener(_onSearchChanged);
     _searcher?.dispose();
@@ -259,8 +313,41 @@ class _ReaderScreenState extends State<ReaderScreen>
     );
   }
 
+  @override
+  double? get linkedPosition {
+    if (!_ready || !_controller.isReady) return null;
+    final layouts = _controller.layout.pageLayouts;
+    final y = _controller.centerPosition.dy;
+    for (final (i, rect) in layouts.indexed) {
+      // A center in the gap above a page counts as that page's top.
+      if (y < rect.bottom) {
+        return i + ((y - rect.top) / rect.height).clamp(0.0, 1.0);
+      }
+    }
+    return layouts.length.toDouble();
+  }
+
+  @override
+  double follow(double position) {
+    if (!_ready || !_controller.isReady) return position;
+    final count = _controller.layout.pageLayouts.length;
+    final at = position.clamp(0.0, count.toDouble());
+    final index = at.floor().clamp(0, count - 1);
+    _following = true;
+    try {
+      _jumpTo(_state.copyWith(page: index + 1, fy: at - index));
+    } finally {
+      _following = false;
+    }
+    return linkedPosition ?? at;
+  }
+
   void _onViewChanged() {
     if (!_ready || !_controller.isReady) return;
+    if (!_following) {
+      final position = linkedPosition;
+      if (position != null) widget.link?.moved(this, position);
+    }
     final page = _controller.pageNumber;
     if (page == null) return;
     final layouts = _controller.layout.pageLayouts;
@@ -1248,9 +1335,27 @@ class _ReaderScreenState extends State<ReaderScreen>
         ),
       );
     }
-    final compact = MediaQuery.sizeOf(context).width < _fullToolbar;
     // Shown as buttons where there is room for them, otherwise in a menu.
     final more = [
+      if (widget.onOpenBeside != null)
+        _ToolbarAction(
+          icon: CupertinoIcons.square_split_2x1,
+          label: l.openBeside,
+          onPressed: widget.onOpenBeside,
+        ),
+      if (widget.onNewWindow != null)
+        _ToolbarAction(
+          icon: CupertinoIcons.macwindow,
+          label: l.moveToNewWindow,
+          onPressed: widget.onNewWindow,
+        ),
+      if (widget.link case final link?)
+        _ToolbarAction(
+          icon: CupertinoIcons.link,
+          label: l.scrollTogether,
+          active: link.isOn,
+          onPressed: link.toggle,
+        ),
       _ToolbarAction(
         icon: CupertinoIcons.globe,
         label: l.translate,
@@ -1296,13 +1401,23 @@ class _ReaderScreenState extends State<ReaderScreen>
             showTintSheet(context, initial: _state.tint, onChanged: _setTint),
       ),
     ];
+    // Search, highlight, its color and drawing always show.
+    final compact =
+        MediaQuery.sizeOf(context).width <
+        _toolbarTitle + _toolbarButton * (4 + more.length);
     return Scaffold(
       appBar: MacToolbar(
-        leading: MacIconButton(
-          icon: CupertinoIcons.chevron_back,
-          tooltip: l.back,
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        leading: widget.onClose == null
+            ? MacIconButton(
+                icon: CupertinoIcons.chevron_back,
+                tooltip: l.back,
+                onPressed: () => Navigator.of(context).pop(),
+              )
+            : MacIconButton(
+                icon: CupertinoIcons.xmark,
+                tooltip: l.close,
+                onPressed: widget.onClose,
+              ),
         title: widget.book.title,
         actions: [
           MacIconButton(
@@ -1380,7 +1495,7 @@ class _ReaderScreenState extends State<ReaderScreen>
                               ? theme.colorScheme.primary
                               : null,
                         ),
-                        Text(item.label),
+                        Flexible(child: Text(item.label)),
                       ],
                     ),
                   ),

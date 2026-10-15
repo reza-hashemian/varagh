@@ -949,4 +949,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get moreActions => 'More';
+
+  @override
+  String get openBeside => 'Open a book beside';
+
+  @override
+  String get moveToNewWindow => 'Move to a new window';
+
+  @override
+  String get newWindow => 'New window';
+
+  @override
+  String get newWindowFailed => 'Couldn\'t open a new window.';
+
+  @override
+  String get findBookHint => 'Find a book';
+
+  @override
+  String get scrollTogether => 'Scroll together';
 }

@@ -10,6 +10,7 @@ import 'core/app_state.dart';
 import 'core/db.dart';
 import 'core/open_with.dart';
 import 'core/theme.dart';
+import 'core/windows.dart';
 import 'data/library.dart';
 import 'home_shell.dart';
 import 'l10n/app_localizations.dart';
@@ -21,12 +22,19 @@ Future<void> main(List<String> args) async {
   final root = await getApplicationSupportDirectory();
   await Directory(root.path).create(recursive: true);
   final db = openAppDatabase(p.join(root.path, 'varagh.db'));
-  final state = AppState(Library(db, root.path));
-  await _openFromLaunch(state, args);
+  final extraWindow = args.contains(extraWindowArg);
+  final state = AppState(Library(db, root.path), extraWindow: extraWindow);
+  if (extraWindow) {
+    final id = launchBookId(args);
+    if (id != null) state.sessionBookIds = [id];
+  } else {
+    await _openFromLaunch(state, args);
+  }
 
   runApp(VaraghApp(state: state));
   state.sync.syncNow();
-  registerOpenWith(state.library);
+  if (canOpenWindows) state.watchOtherWindows();
+  if (!extraWindow) registerOpenWith(state.library);
 }
 
 /// Lets the app be launched on a book ("Open with"): the file joins the
@@ -37,7 +45,7 @@ Future<void> _openFromLaunch(AppState state, List<String> args) async {
     if (!File(path).existsSync()) continue;
     try {
       final book = await importOpenWithFile(state.library, path);
-      state.sessionBookId = book.id;
+      state.sessionBookIds = [book.id];
       state.reloadBooks();
     } catch (_) {
       // An unreadable file just leaves the app on the library.

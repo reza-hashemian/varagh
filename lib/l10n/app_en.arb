@@ -434,5 +434,11 @@
   "translateFailed": "Couldn't translate. Check your connection and try again.",
   "retry": "Try again",
   "copy": "Copy",
-  "moreActions": "More"
+  "moreActions": "More",
+  "openBeside": "Open a book beside",
+  "moveToNewWindow": "Move to a new window",
+  "newWindow": "New window",
+  "newWindowFailed": "Couldn't open a new window.",
+  "findBookHint": "Find a book",
+  "scrollTogether": "Scroll together"
 }

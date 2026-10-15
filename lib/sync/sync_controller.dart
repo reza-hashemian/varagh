@@ -24,7 +24,7 @@ extension on SyncKind {
 /// goes to the background or returns, a few seconds after local changes,
 /// and on demand. It never polls.
 class SyncController extends ChangeNotifier with WidgetsBindingObserver {
-  SyncController(this.library, {required this.onMerged}) {
+  SyncController(this.library, {required this.onMerged, this.active = true}) {
     _kind =
         SyncKind.values.asNameMap()[library.setting('sync.kind')] ??
         SyncKind.off;
@@ -39,6 +39,10 @@ class SyncController extends ChangeNotifier with WidgetsBindingObserver {
 
   /// Called when a sync changed local data, so screens can reload.
   final VoidCallback onMerged;
+
+  /// False in an extra window: only the main window syncs, and it carries
+  /// what the others changed since they share its library.
+  final bool active;
 
   static const _changeDelay = Duration(seconds: 6);
 
@@ -220,14 +224,14 @@ class SyncController extends ChangeNotifier with WidgetsBindingObserver {
 
   /// Syncs soon; repeated calls within the delay collapse into one.
   void schedule() {
-    if (!isConfigured) return;
+    if (!active || !isConfigured) return;
     _timer?.cancel();
     _timer = Timer(_changeDelay, syncNow);
   }
 
   Future<void> syncNow() async {
     _timer?.cancel();
-    final store = _store;
+    final store = active ? _store : null;
     if (store == null) return;
     if (_running) {
       _again = true;

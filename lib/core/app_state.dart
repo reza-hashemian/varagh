@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 
 import '../data/library.dart';
@@ -11,7 +13,10 @@ enum AppTab { library, notes, notebooks, tasks, search, settings }
 
 /// App-wide state: look, language, current section and the list of books.
 class AppState extends ChangeNotifier {
-  AppState(this.library) {
+  /// [extraWindow] is a second copy of the app opened beside the first:
+  /// it shares the library but neither syncs nor touches the saved session,
+  /// which belong to the main window.
+  AppState(this.library, {this.extraWindow = false}) {
     _look =
         AppLook.values.asNameMap()[library.setting('ui.look')] ?? AppLook.paper;
     _localeCode = library.setting('ui.locale');
@@ -23,10 +28,15 @@ class AppState extends ChangeNotifier {
     _scrollSpeed =
         double.tryParse(library.setting('reader.scrollSpeed') ?? '') ?? 1;
     _smoothScroll = library.setting('reader.smoothScroll') != '0';
-    sync = SyncController(library, onMerged: _reloadAfterSync);
+    sync = SyncController(
+      library,
+      onMerged: _reloadAfterSync,
+      active: !extraWindow,
+    );
   }
 
   final Library library;
+  final bool extraWindow;
   late final SyncController sync;
 
   /// Fires only when the look, accent or language changes, so the app's
@@ -139,9 +149,51 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Book that was open when the app last closed, so launch can reopen it.
-  String? get sessionBookId => library.setting('session.book');
-  set sessionBookId(String? id) => library.setSetting('session.book', id);
+  /// Books that were open side by side when the app last closed, so
+  /// launch can reopen them. An extra window keeps its own in memory.
+  List<String> get sessionBookIds {
+    if (extraWindow) return _windowBooks;
+    final saved = library.setting('session.book');
+    return saved == null || saved.isEmpty ? const [] : saved.split(',');
+  }
+
+  set sessionBookIds(List<String> ids) {
+    if (extraWindow) {
+      _windowBooks = ids;
+    } else {
+      library.setSetting('session.book', ids.isEmpty ? null : ids.join(','));
+    }
+  }
+
+  var _windowBooks = const <String>[];
+
+  /// Notebook page that was open when the app last closed.
+  String? get sessionPageId =>
+      extraWindow ? null : library.setting('session.page');
+  set sessionPageId(String? id) {
+    if (!extraWindow) library.setSetting('session.page', id);
+  }
+
+  Timer? _watch;
+  int? _dataVersion;
+
+  /// Reloads when another window of the app changes the library, checking
+  /// every couple of seconds. Only needed where the app can open windows.
+  void watchOtherWindows() {
+    _dataVersion = library.dataVersion;
+    _watch ??= Timer.periodic(const Duration(seconds: 2), (_) {
+      final version = library.dataVersion;
+      if (version == _dataVersion) return;
+      _dataVersion = version;
+      reloadBooks();
+    });
+  }
+
+  @override
+  void dispose() {
+    _watch?.cancel();
+    super.dispose();
+  }
 }
 
 class AppScope extends InheritedNotifier<AppState> {

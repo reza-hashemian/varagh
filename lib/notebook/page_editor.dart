@@ -17,11 +17,11 @@ import 'page_surface.dart';
 Future<void> openNotebookPage(BuildContext context, String pageId) async {
   final state = AppScope.read(context);
   // Remembered so the app can reopen the page it was closed on.
-  state.library.setSetting('session.page', pageId);
+  state.sessionPageId = pageId;
   await Navigator.of(
     context,
   ).push(MaterialPageRoute<void>(builder: (_) => PageEditor(pageId: pageId)));
-  state.library.setSetting('session.page', null);
+  state.sessionPageId = null;
   state.refresh();
 }
 

@@ -293,5 +293,11 @@
   "translateFailed": "ترجمه انجام نشد. اتصال اینترنت را بررسی کن و دوباره امتحان کن.",
   "retry": "دوباره",
   "copy": "کپی",
-  "moreActions": "بیشتر"
+  "moreActions": "بیشتر",
+  "openBeside": "باز کردن کتاب کنارش",
+  "moveToNewWindow": "بردن به پنجرهٔ جدید",
+  "newWindow": "پنجرهٔ جدید",
+  "newWindowFailed": "پنجرهٔ جدید باز نشد.",
+  "findBookHint": "پیدا کردن کتاب",
+  "scrollTogether": "اسکرول هم‌زمان"
 }

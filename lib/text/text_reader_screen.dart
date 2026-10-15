@@ -13,23 +13,49 @@ import '../data/library.dart';
 import '../data/models.dart';
 import '../l10n/app_localizations.dart';
 import '../reader/page_tint.dart';
+import '../reader/scroll_link.dart';
 import '../translate/translation_dialog.dart';
 import 'text_book.dart';
 
 /// Reader for reflowable books (EPUB, Markdown, HTML, plain text): one
 /// section on screen at a time, set in the reader's own type size, line
 /// spacing, column width and paper color.
+/// Below this width the buttons for the desk go in a menu.
+const _fullToolbar = 600.0;
+
 class TextReaderScreen extends StatefulWidget {
-  const TextReaderScreen({super.key, required this.book});
+  const TextReaderScreen({
+    super.key,
+    required this.book,
+    this.onClose,
+    this.onOpenBeside,
+    this.onNewWindow,
+    this.link,
+  });
 
   final Book book;
+
+  /// Set when the reader is one of several on a desk: closes just this
+  /// one, in place of going back.
+  final VoidCallback? onClose;
+
+  /// Opens another book beside this one; null when there is no room.
+  final VoidCallback? onOpenBeside;
+
+  /// Moves the book to a window of its own; null where there are none.
+  final VoidCallback? onNewWindow;
+
+  /// Scrolls this book together with the others on its desk when on;
+  /// null when it is alone.
+  final ScrollLink? link;
 
   @override
   State<TextReaderScreen> createState() => _TextReaderScreenState();
 }
 
 class _TextReaderScreenState extends State<TextReaderScreen>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver
+    implements LinkedReader {
   static const _saveDelay = Duration(milliseconds: 500);
 
   late final Library _library = AppScope.read(context).library;
@@ -48,6 +74,10 @@ class _TextReaderScreenState extends State<TextReaderScreen>
   Timer? _saveTimer;
   var _focus = false;
 
+  /// Set while scrolling to follow a linked book, so the move isn't
+  /// passed back.
+  var _following = false;
+
   late PagePaper _paper;
   late double _size, _height, _width;
 
@@ -61,9 +91,62 @@ class _TextReaderScreenState extends State<TextReaderScreen>
     _size = _setting('text.size', 17);
     _height = _setting('text.height', 1.9);
     _width = _setting('text.width', 720);
-    _scroll.addListener(_scheduleSave);
+    _scroll.addListener(_onScroll);
     WidgetsBinding.instance.addObserver(this);
+    _joinLink(widget.link);
     _load();
+  }
+
+  @override
+  void didUpdateWidget(TextReaderScreen old) {
+    super.didUpdateWidget(old);
+    if (old.link == widget.link) return;
+    _leaveLink(old.link);
+    _joinLink(widget.link);
+  }
+
+  void _joinLink(ScrollLink? link) {
+    link?.join(this);
+    link?.addListener(_onLinkChanged);
+  }
+
+  void _leaveLink(ScrollLink? link) {
+    link?.leave(this);
+    link?.removeListener(_onLinkChanged);
+  }
+
+  void _onLinkChanged() {
+    if (mounted) setState(() {});
+  }
+
+  void _onScroll() {
+    _scheduleSave();
+    if (_following || _pendingFraction != null) return;
+    final position = linkedPosition;
+    if (position != null) widget.link?.moved(this, position);
+  }
+
+  @override
+  double? get linkedPosition => _book == null ? null : _section + _fraction;
+
+  @override
+  double follow(double position) {
+    final count = _book?.sections.length ?? 0;
+    if (count == 0) return position;
+    final at = position.clamp(0.0, count.toDouble());
+    final index = at.floor().clamp(0, count - 1);
+    final fraction = at - index;
+    _following = true;
+    try {
+      if (index != _section) {
+        _goToSection(index, fraction: fraction);
+      } else if (_scroll.hasClients) {
+        _scroll.jumpTo(fraction * _scroll.position.maxScrollExtent);
+      }
+    } finally {
+      _following = false;
+    }
+    return index + fraction;
   }
 
   double _setting(String key, double fallback) =>
@@ -90,6 +173,7 @@ class _TextReaderScreenState extends State<TextReaderScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _leaveLink(widget.link);
     _flush();
     _scroll.dispose();
     _keys.dispose();
@@ -374,6 +458,67 @@ class _TextReaderScreenState extends State<TextReaderScreen>
     return KeyEventResult.ignored;
   }
 
+  /// Buttons for the desk the book is on: as buttons where there is room,
+  /// otherwise in a menu.
+  List<Widget> _deskActions(AppLocalizations l, ThemeData theme) {
+    final actions = [
+      if (widget.onOpenBeside != null)
+        (
+          CupertinoIcons.square_split_2x1,
+          l.openBeside,
+          widget.onOpenBeside!,
+          false,
+        ),
+      if (widget.onNewWindow != null)
+        (
+          CupertinoIcons.macwindow,
+          l.moveToNewWindow,
+          widget.onNewWindow!,
+          false,
+        ),
+      if (widget.link case final link?)
+        (CupertinoIcons.link, l.scrollTogether, link.toggle, link.isOn),
+    ];
+    if (actions.isEmpty) return const [];
+    if (MediaQuery.sizeOf(context).width >= _fullToolbar) {
+      return [
+        for (final (icon, label, action, active) in actions)
+          MacIconButton(
+            icon: icon,
+            tooltip: label,
+            active: active,
+            onPressed: action,
+          ),
+      ];
+    }
+    return [
+      PopupMenuButton<VoidCallback>(
+        tooltip: l.moreActions,
+        position: PopupMenuPosition.under,
+        icon: const Icon(CupertinoIcons.ellipsis),
+        onSelected: (action) => action(),
+        itemBuilder: (context) => [
+          for (final (icon, label, action, active) in actions)
+            PopupMenuItem(
+              value: action,
+              height: 38,
+              child: Row(
+                spacing: 10,
+                children: [
+                  Icon(
+                    icon,
+                    size: 18,
+                    color: active ? theme.colorScheme.primary : null,
+                  ),
+                  Flexible(child: Text(label)),
+                ],
+              ),
+            ),
+        ],
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -493,11 +638,17 @@ class _TextReaderScreenState extends State<TextReaderScreen>
         appBar: _focus
             ? null
             : MacToolbar(
-                leading: MacIconButton(
-                  icon: CupertinoIcons.chevron_back,
-                  tooltip: l.back,
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
+                leading: widget.onClose == null
+                    ? MacIconButton(
+                        icon: CupertinoIcons.chevron_back,
+                        tooltip: l.back,
+                        onPressed: () => Navigator.of(context).pop(),
+                      )
+                    : MacIconButton(
+                        icon: CupertinoIcons.xmark,
+                        tooltip: l.close,
+                        onPressed: widget.onClose,
+                      ),
                 title: widget.book.title,
                 actions: [
                   MacIconButton(
@@ -525,6 +676,7 @@ class _TextReaderScreenState extends State<TextReaderScreen>
                     tooltip: l.focusMode,
                     onPressed: () => setState(() => _focus = true),
                   ),
+                  ..._deskActions(l, theme),
                 ],
               ),
         body: Stack(

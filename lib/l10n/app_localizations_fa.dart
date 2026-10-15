@@ -949,4 +949,22 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get moreActions => 'بیشتر';
+
+  @override
+  String get openBeside => 'باز کردن کتاب کنارش';
+
+  @override
+  String get moveToNewWindow => 'بردن به پنجرهٔ جدید';
+
+  @override
+  String get newWindow => 'پنجرهٔ جدید';
+
+  @override
+  String get newWindowFailed => 'پنجرهٔ جدید باز نشد.';
+
+  @override
+  String get findBookHint => 'پیدا کردن کتاب';
+
+  @override
+  String get scrollTogether => 'اسکرول هم‌زمان';
 }
