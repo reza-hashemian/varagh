@@ -18,6 +18,7 @@ platform it has been built and run on so far; the others are untested.
 | Debian, Ubuntu | [varagh-linux-amd64.deb](https://github.com/reza-hashemian/varagh/releases/latest/download/varagh-linux-amd64.deb) |
 | Other Linux | [varagh-linux-x64.tar.gz](https://github.com/reza-hashemian/varagh/releases/latest/download/varagh-linux-x64.tar.gz) |
 | Android | [varagh-android.apk](https://github.com/reza-hashemian/varagh/releases/latest/download/varagh-android.apk) |
+| macOS | [varagh-macos.dmg](https://github.com/reza-hashemian/varagh/releases/latest/download/varagh-macos.dmg) |
 
 These links always point at the newest release. Every version is on the
 [releases page](https://github.com/reza-hashemian/varagh/releases).
@@ -32,6 +33,9 @@ These links always point at the newest release. Every version is on the
 - **Android:** open the APK on the phone and allow installing from that
   source. It is signed with a test key and has not been tried on a device
   yet.
+- **macOS:** open the disk image and drag Varagh onto Applications. It is
+  not signed with an Apple Developer ID, so the first time, right-click the
+  app and choose Open, then confirm. It has not been run on a Mac yet.
 
 ## What it does
 
@@ -123,7 +127,13 @@ C++" workload)
 flutter build windows --release
 ```
 
-The workflow in `.github/workflows/build.yml` builds both on GitHub Actions
+**macOS** (on a Mac, with Xcode)
+
+```sh
+flutter build macos --release
+```
+
+The workflow in `.github/workflows/build.yml` builds all of them on GitHub Actions
 when run by hand or when a `v*` tag is pushed.
 
 ## Where your data lives
