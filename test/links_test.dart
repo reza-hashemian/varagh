@@ -177,7 +177,11 @@ void main() {
       );
       try {
         // The viewer counts from the page box's corner, at 50, 60.
-        expect(await fileLinkAt(document, 1, 100, 65), 'clips/video.mp4');
+        // In the system's own way of writing a path.
+        expect(
+          await fileLinkAt(document, 1, 100, 65),
+          p.join('clips', 'video.mp4'),
+        );
         expect(await fileLinkAt(document, 1, 10, 10), isNull);
         // A web link is the viewer's to open.
         expect(await fileLinkAt(document, 1, 100, 265), isNull);

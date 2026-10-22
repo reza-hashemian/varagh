@@ -200,7 +200,7 @@ class SettingsScreen extends StatelessWidget {
                       MacRow(
                         label: l.version,
                         control: Text(
-                          '0.9.0',
+                          '0.9.1',
                           style: TextStyle(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),

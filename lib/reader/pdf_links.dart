@@ -1,4 +1,5 @@
 import 'dart:ffi';
+import 'dart:io';
 
 import 'package:ffi/ffi.dart';
 import 'package:pdfium_dart/pdfium_dart.dart' as pdfium;
@@ -44,7 +45,11 @@ Future<String?> fileLinkAt(
       final buffer = calloc<Uint8>(size);
       try {
         lib.FPDFAction_GetFilePath(action, buffer.cast(), size);
-        return buffer.cast<Utf8>().toDartString();
+        final path = buffer.cast<Utf8>().toDartString();
+        // PDFium turns the PDF's slashes into the system's separator: a
+        // backslash on Windows, which is a path there, but a colon on a
+        // Mac, the separator of old Mac OS, which a Mac no longer takes.
+        return Platform.isMacOS ? path.replaceAll(':', '/') : path;
       } finally {
         calloc.free(buffer);
       }
