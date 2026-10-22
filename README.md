@@ -10,6 +10,16 @@ platform it has been built and run on so far; the others are untested.
 کتاب‌خوانی برای PDF و کتاب که یادداشت‌ها، دفترها و کارهایت را هم نگه
 می‌دارد. رابط فارسی و انگلیسی دارد، با تقویم شمسی و چیدمان راست‌به‌چپ.
 
+![The library](docs/screenshots/library.png)
+
+![Reading a book with highlights](docs/screenshots/reader.png)
+
+| Notes | Tasks |
+|---|---|
+| ![A Markdown note](docs/screenshots/notes.png) | ![A task board](docs/screenshots/tasks.png) |
+
+The books, notes and tasks in these pictures are made-up sample data.
+
 ## Download · دانلود
 
 | | |
