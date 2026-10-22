@@ -1,5 +1,8 @@
+import 'dart:math' as math;
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
 import '../core/calendar.dart';
@@ -91,27 +94,162 @@ class _BoardScroller extends StatefulWidget {
 
 class _BoardScrollerState extends State<_BoardScroller> {
   final _controller = ScrollController();
+  final _dragPoint = ValueNotifier<Offset?>(null);
 
   @override
   void dispose() {
     _controller.dispose();
+    _dragPoint.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scrollbar(
-      controller: _controller,
-      thumbVisibility: true,
-      trackVisibility: true,
-      child: SingleChildScrollView(
+    return _BoardDrag(
+      point: _dragPoint,
+      child: Scrollbar(
         controller: _controller,
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 22),
-        child: widget.child,
+        thumbVisibility: true,
+        trackVisibility: true,
+        child: SingleChildScrollView(
+          controller: _controller,
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 22),
+          child: _EdgeScroll(child: widget.child),
+        ),
       ),
     );
   }
+}
+
+/// Where the finger or mouse is while a card is dragged, in global
+/// coordinates; null when no card is being dragged.
+class _BoardDrag extends InheritedWidget {
+  const _BoardDrag({required this.point, required super.child});
+
+  final ValueNotifier<Offset?> point;
+
+  static ValueNotifier<Offset?>? of(BuildContext context) =>
+      context.getInheritedWidgetOfExactType<_BoardDrag>()?.point;
+
+  @override
+  bool updateShouldNotify(_BoardDrag oldWidget) => point != oldWidget.point;
+}
+
+/// Scrolls the scroll view it sits in while a dragged card is held near
+/// that view's edge, so cards can reach columns or spots off screen.
+class _EdgeScroll extends StatefulWidget {
+  const _EdgeScroll({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_EdgeScroll> createState() => _EdgeScrollState();
+}
+
+class _EdgeScrollState extends State<_EdgeScroll>
+    with SingleTickerProviderStateMixin {
+  /// How close to an edge, in pixels, the drag has to come to scroll.
+  static const _edge = 64.0;
+
+  /// Pixels a second with the finger right at the edge.
+  static const _topSpeed = 900.0;
+
+  ValueNotifier<Offset?>? _point;
+  late final Ticker _ticker = createTicker(_tick);
+  Duration _last = Duration.zero;
+
+  /// Signed, in scroll offset per second; 0 while not scrolling.
+  double _speed = 0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final point = _BoardDrag.of(context);
+    if (point != _point) {
+      _point?.removeListener(_moved);
+      _point = point?..addListener(_moved);
+    }
+  }
+
+  @override
+  void dispose() {
+    _point?.removeListener(_moved);
+    _ticker.dispose();
+    super.dispose();
+  }
+
+  void _moved() {
+    _speed = mounted ? _speedFor(_point?.value) : 0;
+    if (_speed == 0) {
+      _ticker.stop();
+    } else if (!_ticker.isActive) {
+      _last = Duration.zero;
+      _ticker.start();
+    }
+  }
+
+  double _speedFor(Offset? at) {
+    final scrollable = Scrollable.maybeOf(context);
+    final box = scrollable?.context.findRenderObject() as RenderBox?;
+    if (at == null || scrollable == null || box == null || !box.hasSize) {
+      return 0;
+    }
+    final area = box.localToGlobal(Offset.zero) & box.size;
+    final horizontal = scrollable.position.axis == Axis.horizontal;
+    // Only the view under the finger scrolls: a column scrolls up or down
+    // only while the card is over that column.
+    final (along, start, end, acrossIn) = horizontal
+        ? (
+            at.dx,
+            area.left,
+            area.right,
+            at.dy >= area.top && at.dy <= area.bottom,
+          )
+        : (
+            at.dy,
+            area.top,
+            area.bottom,
+            at.dx >= area.left && at.dx <= area.right,
+          );
+    if (!acrossIn) return 0;
+    final reach = math.min(_edge, (end - start) / 3);
+    // Toward the right or bottom edge is +1, the left or top edge -1.
+    final double toward;
+    final double depth;
+    if (along > end - reach) {
+      toward = 1;
+      depth = along - (end - reach);
+    } else if (along < start + reach) {
+      toward = -1;
+      depth = start + reach - along;
+    } else {
+      return 0;
+    }
+    // A right-to-left board grows its offset toward the left.
+    final flipped = switch (scrollable.axisDirection) {
+      AxisDirection.left || AxisDirection.up => -1.0,
+      AxisDirection.right || AxisDirection.down => 1.0,
+    };
+    return toward * flipped * _topSpeed * math.min(1.0, depth / reach);
+  }
+
+  // Jumps rather than animates: while a scroll animates, the board ignores
+  // the finger, and the card would not see the column it is dropped on.
+  void _tick(Duration elapsed) {
+    final step = (elapsed - _last).inMicroseconds / 1e6;
+    _last = elapsed;
+    final position = Scrollable.maybeOf(context)?.position;
+    if (position == null || step <= 0) return;
+    final to = (position.pixels + _speed * step).clamp(
+      position.minScrollExtent,
+      position.maxScrollExtent,
+    );
+    if (to != position.pixels) position.jumpTo(to);
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 class _Column extends StatelessWidget {
@@ -220,35 +358,42 @@ class _Column extends StatelessWidget {
           ),
           Flexible(
             child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (final card in cards)
-                    _DropSlot(
-                      // Dropping a card onto its own slot would not move it.
-                      accepts: (id) => id != card.id,
-                      onDrop: (id) => board.onMove(id, list.id, card.id),
-                      child: Draggable<String>(
-                        data: card.id,
-                        feedback: Transform.rotate(
-                          angle: 0.04,
-                          child: SizedBox(
-                            width: _columnWidth - 16,
-                            child: _Card(task: card, lifted: true),
+              child: _EdgeScroll(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final card in cards)
+                      _DropSlot(
+                        // Dropping a card onto its own slot would not move it.
+                        accepts: (id) => id != card.id,
+                        onDrop: (id) => board.onMove(id, list.id, card.id),
+                        child: Draggable<String>(
+                          data: card.id,
+                          onDragUpdate: (details) =>
+                              _BoardDrag.of(context)?.value =
+                                  details.globalPosition,
+                          onDragEnd: (_) =>
+                              _BoardDrag.of(context)?.value = null,
+                          feedback: Transform.rotate(
+                            angle: 0.04,
+                            child: SizedBox(
+                              width: _columnWidth - 16,
+                              child: _Card(task: card, lifted: true),
+                            ),
+                          ),
+                          childWhenDragging: Opacity(
+                            opacity: 0.3,
+                            child: _Card(task: card),
+                          ),
+                          child: _Card(
+                            task: card,
+                            onToggle: () => board.onToggle(card),
+                            onOpen: () => board.onOpen(card),
                           ),
                         ),
-                        childWhenDragging: Opacity(
-                          opacity: 0.3,
-                          child: _Card(task: card),
-                        ),
-                        child: _Card(
-                          task: card,
-                          onToggle: () => board.onToggle(card),
-                          onOpen: () => board.onOpen(card),
-                        ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
