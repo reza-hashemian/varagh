@@ -21,8 +21,22 @@ const _coverWidth = 360.0;
 
 /// Copies a book into the library, checks that it opens, and saves its
 /// cover: the first page of a PDF, or an EPUB's own cover image. Throws if
-/// the file isn't readable or its type isn't supported.
+/// the file isn't readable or its type isn't supported. [sourcePath] is
+/// where the file is on this device, if it is on disk.
 Future<ImportResult> importBook(
+  Library library, {
+  required String name,
+  required Stream<Uint8List> bytes,
+  String? sourcePath,
+}) async {
+  final result = await _importBook(library, name: name, bytes: bytes);
+  if (sourcePath != null) {
+    library.setSourceFolder(result.book.id, p.dirname(sourcePath));
+  }
+  return result;
+}
+
+Future<ImportResult> _importBook(
   Library library, {
   required String name,
   required Stream<Uint8List> bytes,

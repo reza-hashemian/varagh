@@ -116,6 +116,13 @@ class Library {
   File fileOf(Book book) => File(p.join(booksDir, book.fileName));
   File coverOf(String bookId) => File(p.join(coversDir, '$bookId.png'));
 
+  /// Folder the book's file was added from on this device, so links in it
+  /// to files beside it still find them. Kept in the settings, which stay
+  /// on the device.
+  String? sourceFolderOf(String bookId) => setting('book.folder.$bookId');
+  void setSourceFolder(String bookId, String folder) =>
+      setSetting('book.folder.$bookId', folder);
+
   final int Function() _clock;
 
   int get _now => _clock();

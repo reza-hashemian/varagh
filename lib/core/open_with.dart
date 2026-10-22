@@ -48,6 +48,8 @@ Future<Book> importOpenWithFile(Library library, String path) async {
       library,
       name: p.basename(path),
       bytes: file.openRead().map(Uint8List.fromList),
+      // On Android the file is a passing copy, not where the book lives.
+      sourcePath: Platform.isAndroid ? null : path,
     );
     return result.book;
   } finally {

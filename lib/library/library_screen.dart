@@ -41,6 +41,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
           state.library,
           name: file.name,
           bytes: file.readAsByteStream(),
+          sourcePath: file.path,
         );
         if (result.alreadyExisted) {
           messenger.showSnackBar(

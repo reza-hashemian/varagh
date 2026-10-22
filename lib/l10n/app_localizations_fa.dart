@@ -967,4 +967,46 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get scrollTogether => 'اسکرول هم‌زمان';
+
+  @override
+  String get keyboardShortcuts => 'میان‌برهای صفحه‌کلید';
+
+  @override
+  String get shortcutDarkMode => 'روشن و خاموش کردن نمای تیره';
+
+  @override
+  String get shortcutPageDark => 'صفحهٔ تیره در کتاب';
+
+  @override
+  String get shortcutAutoHide => 'روشن و خاموش کردن پنهان شدن نوارها';
+
+  @override
+  String get shortcutCloseBook => 'بستن کتاب';
+
+  @override
+  String get autoHideBars => 'پنهان شدن نوارها در بیکاری';
+
+  @override
+  String get autoHideBarsHint =>
+      'در کتاب، اگر ۵ ثانیه موس تکان نخورد نوار بالا و پایین کنار می‌روند و با اولین حرکت موس برمی‌گردند.';
+
+  @override
+  String get autoHideOn => 'نوارها در بیکاری پنهان می‌شوند';
+
+  @override
+  String get autoHideOff => 'نوارها روی صفحه می‌مانند';
+
+  @override
+  String get updates => 'به‌روزرسانی';
+
+  @override
+  String get updatesHint => 'نسخه‌های تازه در گیت‌هاب منتشر می‌شوند.';
+
+  @override
+  String get openGitHub => 'باز کردن گیت‌هاب';
+
+  @override
+  String linkFailed(String target) {
+    return 'باز نشد: $target';
+  }
 }

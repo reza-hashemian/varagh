@@ -46,6 +46,13 @@ These links always point at the newest release. Every version is on the
 - Page tinting for PDFs: paper, sepia, green, gray, dark and black, with
   strength, contrast and text weight controls, saved per book
 - Find in book, table of contents, focus mode
+- Links in a book open where they point: web pages in the browser, and
+  videos or other files, on the device or beside the book, in the
+  system's own player
+- Bars that slide away after five seconds without moving the mouse, and
+  come back when it moves (Settings → Reading)
+- Keyboard shortcuts, listed in Settings: Ctrl+D for the dark look,
+  Ctrl+Shift+D for a dark page, F11 for focus mode, and more
 
 **On the page**
 

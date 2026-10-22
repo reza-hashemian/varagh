@@ -28,6 +28,7 @@ class AppState extends ChangeNotifier {
     _scrollSpeed =
         double.tryParse(library.setting('reader.scrollSpeed') ?? '') ?? 1;
     _smoothScroll = library.setting('reader.smoothScroll') != '0';
+    _autoHideBars = library.setting('reader.autoHide') == '1';
     sync = SyncController(
       library,
       onMerged: _reloadAfterSync,
@@ -70,6 +71,18 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  late bool _autoHideBars;
+
+  /// Whether a book's toolbar and page bar slide away after a few seconds
+  /// without the mouse moving, and come back when it does.
+  bool get autoHideBars => _autoHideBars;
+  set autoHideBars(bool value) {
+    if (value == _autoHideBars) return;
+    _autoHideBars = value;
+    library.setSetting('reader.autoHide', value ? '1' : '0');
+    notifyListeners();
+  }
+
   late AppLook _look;
   late AppAccent _accent;
   var _tab = AppTab.library;
@@ -84,6 +97,17 @@ class AppState extends ChangeNotifier {
     library.setSetting('ui.look', value.name);
     appearance.value++;
     notifyListeners();
+  }
+
+  /// Switches between the dark look and the light one, each time back to
+  /// the dark or light look last chosen.
+  void toggleDark() {
+    final isDark = _look == AppLook.dark || _look == AppLook.black;
+    library.setSetting(isDark ? 'ui.darkLook' : 'ui.lightLook', _look.name);
+    final looks = AppLook.values.asNameMap();
+    look = isDark
+        ? looks[library.setting('ui.lightLook')] ?? AppLook.paper
+        : looks[library.setting('ui.darkLook')] ?? AppLook.dark;
   }
 
   AppAccent get accent => _accent;

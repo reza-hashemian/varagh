@@ -1897,6 +1897,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Scroll together'**
   String get scrollTogether;
+
+  /// No description provided for @keyboardShortcuts.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyboard shortcuts'**
+  String get keyboardShortcuts;
+
+  /// No description provided for @shortcutDarkMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark look on or off'**
+  String get shortcutDarkMode;
+
+  /// No description provided for @shortcutPageDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark page in a book'**
+  String get shortcutPageDark;
+
+  /// No description provided for @shortcutAutoHide.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide bars when idle, on or off'**
+  String get shortcutAutoHide;
+
+  /// No description provided for @shortcutCloseBook.
+  ///
+  /// In en, this message translates to:
+  /// **'Close the book'**
+  String get shortcutCloseBook;
+
+  /// No description provided for @autoHideBars.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide bars when idle'**
+  String get autoHideBars;
+
+  /// No description provided for @autoHideBarsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'In a book, the toolbar and page bar slide away after 5 seconds without moving the mouse, and come back as soon as it moves.'**
+  String get autoHideBarsHint;
+
+  /// No description provided for @autoHideOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Bars now hide when idle'**
+  String get autoHideOn;
+
+  /// No description provided for @autoHideOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Bars now stay on screen'**
+  String get autoHideOff;
+
+  /// No description provided for @updates.
+  ///
+  /// In en, this message translates to:
+  /// **'Updates'**
+  String get updates;
+
+  /// No description provided for @updatesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'New versions are published on GitHub.'**
+  String get updatesHint;
+
+  /// No description provided for @openGitHub.
+  ///
+  /// In en, this message translates to:
+  /// **'Open GitHub'**
+  String get openGitHub;
+
+  /// No description provided for @linkFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open {target}'**
+  String linkFailed(String target);
 }
 
 class _AppLocalizationsDelegate

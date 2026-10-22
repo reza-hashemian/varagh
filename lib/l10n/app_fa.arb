@@ -299,5 +299,18 @@
   "newWindow": "پنجرهٔ جدید",
   "newWindowFailed": "پنجرهٔ جدید باز نشد.",
   "findBookHint": "پیدا کردن کتاب",
-  "scrollTogether": "اسکرول هم‌زمان"
+  "scrollTogether": "اسکرول هم‌زمان",
+  "keyboardShortcuts": "میان‌برهای صفحه‌کلید",
+  "shortcutDarkMode": "روشن و خاموش کردن نمای تیره",
+  "shortcutPageDark": "صفحهٔ تیره در کتاب",
+  "shortcutAutoHide": "روشن و خاموش کردن پنهان شدن نوارها",
+  "shortcutCloseBook": "بستن کتاب",
+  "autoHideBars": "پنهان شدن نوارها در بیکاری",
+  "autoHideBarsHint": "در کتاب، اگر ۵ ثانیه موس تکان نخورد نوار بالا و پایین کنار می‌روند و با اولین حرکت موس برمی‌گردند.",
+  "autoHideOn": "نوارها در بیکاری پنهان می‌شوند",
+  "autoHideOff": "نوارها روی صفحه می‌مانند",
+  "updates": "به‌روزرسانی",
+  "updatesHint": "نسخه‌های تازه در گیت‌هاب منتشر می‌شوند.",
+  "openGitHub": "باز کردن گیت‌هاب",
+  "linkFailed": "باز نشد: {target}"
 }

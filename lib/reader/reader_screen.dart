@@ -6,7 +6,10 @@ import 'package:flutter/services.dart';
 import 'package:pdfrx/pdfrx.dart';
 
 import '../core/app_state.dart';
+import '../core/auto_hide_bars.dart';
+import '../core/links.dart';
 import '../core/mac_widgets.dart';
+import '../core/shortcuts.dart';
 import '../core/theme.dart';
 import '../data/library.dart';
 import '../data/models.dart';
@@ -21,6 +24,7 @@ import 'highlight_colors.dart';
 import 'highlights_panel.dart';
 import 'page_tint.dart';
 import 'pdf_export_dialog.dart';
+import 'pdf_links.dart';
 import 'scroll_link.dart';
 import 'sticky_painter.dart';
 import 'tint_sheet.dart';
@@ -158,6 +162,20 @@ class _ReaderScreenState extends State<ReaderScreen>
   /// Hides the toolbar, page bar and side panel.
   var _focus = false;
 
+  /// Whether the bars slide away while the mouse rests; follows the
+  /// setting, which a shortcut in any book can flip.
+  late var _autoHide = _appState.autoHideBars;
+
+  /// The paper the page had before the dark-page shortcut, to go back to.
+  PagePaper? _paperBeforeDark;
+
+  /// Keeps the viewer when the bars around it are laid out another way,
+  /// so it isn't loaded again.
+  final _viewerKey = GlobalKey();
+
+  /// Where the last press on the page was, in viewer coordinates.
+  Offset? _lastDown;
+
   PdfTextSearcher? _searcher;
   var _finding = false;
 
@@ -186,7 +204,27 @@ class _ReaderScreenState extends State<ReaderScreen>
     _showPanel = _library.setting('reader.panel') == '1';
     _loadAnnotations();
     WidgetsBinding.instance.addObserver(this);
+    _appState.addListener(_onAppChanged);
     _joinLink(widget.link);
+  }
+
+  void _onAppChanged() {
+    if (_appState.autoHideBars != _autoHide && mounted) {
+      setState(() => _autoHide = _appState.autoHideBars);
+    }
+  }
+
+  void _toggleAutoHide() {
+    final l = AppLocalizations.of(context);
+    _appState.autoHideBars = !_appState.autoHideBars;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(_appState.autoHideBars ? l.autoHideOn : l.autoHideOff),
+          duration: const Duration(seconds: 2),
+        ),
+      );
   }
 
   @override
@@ -214,6 +252,7 @@ class _ReaderScreenState extends State<ReaderScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _appState.removeListener(_onAppChanged);
     _leaveLink(widget.link);
     _controller.removeListener(_onViewChanged);
     _searcher?.removeListener(_onSearchChanged);
@@ -472,6 +511,62 @@ class _ReaderScreenState extends State<ReaderScreen>
   void _setTint(PageTint tint) {
     setState(() => _state = _state.copyWith(tint: tint));
     _scheduleSave();
+  }
+
+  /// Turns the page dark, or back to the paper it had before.
+  void _togglePageDark() {
+    final tint = _state.tint;
+    if (tint.isDark) {
+      _setTint(tint.copyWith(paper: _paperBeforeDark ?? PagePaper.original));
+    } else {
+      _paperBeforeDark = tint.paper;
+      _setTint(tint.copyWith(paper: PagePaper.dark));
+    }
+  }
+
+  // Links
+
+  void _onLinkTap(PdfLink link) {
+    if (link.dest != null) {
+      _controller.goToDest(link.dest);
+    } else if (link.url != null) {
+      _openLink(link.url.toString());
+    } else if (_lastDown != null) {
+      _openFileLinkAt(_controller.localToDocument(_lastDown!));
+    }
+  }
+
+  /// Opens a video, a file or a web page that a link points at, outside
+  /// the app.
+  Future<void> _openLink(String target) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final failed = AppLocalizations.of(context).linkFailed(target);
+    if (!await openBookLink(_library, widget.book, target)) {
+      messenger.showSnackBar(SnackBar(content: Text(failed)));
+    }
+  }
+
+  /// Opens the file a link at [documentPosition] points at, if there is
+  /// one; the viewer doesn't report links of that kind itself.
+  Future<void> _openFileLinkAt(Offset documentPosition) async {
+    if (!_controller.isReady) return;
+    final hit = _controller.getPdfPageHitTestResult(
+      documentPosition,
+      useDocumentLayoutCoordinates: true,
+    );
+    if (hit == null) return;
+    String? target;
+    try {
+      target = await fileLinkAt(
+        _controller.document,
+        hit.page.pageNumber,
+        hit.offset.x,
+        hit.offset.y,
+      );
+    } catch (_) {
+      return;
+    }
+    if (target != null && mounted) await _openLink(target);
   }
 
   // Highlights
@@ -766,6 +861,9 @@ class _ReaderScreenState extends State<ReaderScreen>
 
   void _drawDown(PointerDownEvent event) {
     final point = _pagePoint(event.localPosition);
+    // The overlay takes the press from the viewer, so it takes the
+    // keyboard for it too.
+    _controller.requestFocus();
     if (point == null) return;
     _downAt = event.localPosition;
     _dragged = false;
@@ -978,7 +1076,10 @@ class _ReaderScreenState extends State<ReaderScreen>
       return false;
     }
     final annotation = _annotationAt(details.documentPosition);
-    if (annotation == null) return false;
+    if (annotation == null) {
+      _openFileLinkAt(details.documentPosition);
+      return false;
+    }
     if (annotation.kind == AnnotationKind.page) {
       _openAttachedPage(annotation);
     } else {
@@ -1188,6 +1289,14 @@ class _ReaderScreenState extends State<ReaderScreen>
           getPageRenderingScale: _pageRenderingScale,
           onViewerReady: _onViewerReady,
           onGeneralTap: _onTap,
+          // Shortcuts work as soon as the book is open.
+          keyHandlerParams: const PdfViewerKeyHandlerParams(autofocus: true),
+          // The pointer turns into a hand over a link, which is enough of
+          // a sign; tinting every link would color tables of contents.
+          linkHandlerParams: PdfLinkHandlerParams(
+            onLinkTap: _onLinkTap,
+            linkColor: Colors.transparent,
+          ),
           pageOverlaysBuilder: _placedHandles,
           // Draggable thumbs: down the side for pages, along the bottom for
           // moving sideways when zoomed in.
@@ -1237,7 +1346,10 @@ class _ReaderScreenState extends State<ReaderScreen>
       // is off, so the viewer isn't rebuilt each time it's toggled.
       viewer = Stack(
         children: [
-          viewer,
+          Listener(
+            onPointerDown: (event) => _lastDown = event.localPosition,
+            child: viewer,
+          ),
           if (_draw)
             Positioned.fill(
               child: Listener(
@@ -1302,14 +1414,48 @@ class _ReaderScreenState extends State<ReaderScreen>
       ],
     );
 
+    viewer = KeyedSubtree(key: _viewerKey, child: viewer);
+
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.escape): () {
-          if (_focus) setState(() => _focus = false);
+          if (_focus) {
+            setState(() => _focus = false);
+          } else if (_finding) {
+            _toggleFind();
+          }
         },
+        AppKeys.focusMode: _toggleFocus,
+        AppKeys.pageDark: _togglePageDark,
+        AppKeys.autoHide: _toggleAutoHide,
+        AppKeys.closeBook: _close,
+        AppKeys.find: () {
+          if (_ready) _finding ? _findFocus.requestFocus() : _toggleFind();
+        },
+        AppKeys.goToPage: () {
+          if (_ready && _pageCount > 1) _askPage();
+        },
+        AppKeys.highlight: _highlightSelection,
+        AppKeys.draw: () {
+          if (_ready) _setDraw(!_draw);
+        },
+        AppKeys.undo: _undoLast,
       },
       child: _scaffold(l, theme, tint, wide, viewer),
     );
+  }
+
+  void _toggleFocus() => setState(() {
+    _focus = !_focus;
+    if (_focus) _draw = false;
+  });
+
+  void _close() {
+    if (widget.onClose != null) {
+      widget.onClose!();
+    } else {
+      Navigator.of(context).maybePop();
+    }
   }
 
   Widget _scaffold(
@@ -1394,11 +1540,8 @@ class _ReaderScreenState extends State<ReaderScreen>
       ),
       _ToolbarAction(
         icon: CupertinoIcons.fullscreen,
-        label: l.focusMode,
-        onPressed: () => setState(() {
-          _focus = true;
-          _draw = false;
-        }),
+        label: withShortcut(l.focusMode, AppKeys.focusMode),
+        onPressed: _toggleFocus,
       ),
       _ToolbarAction(
         icon: CupertinoIcons.circle_lefthalf_fill,
@@ -1412,203 +1555,233 @@ class _ReaderScreenState extends State<ReaderScreen>
     final compact =
         MediaQuery.sizeOf(context).width <
         _toolbarTitle + _toolbarButton * (4 + more.length);
-    return Scaffold(
-      appBar: MacToolbar(
-        leading: widget.onClose == null
-            ? MacIconButton(
-                icon: CupertinoIcons.chevron_back,
-                tooltip: l.back,
-                onPressed: () => Navigator.of(context).pop(),
-              )
-            : MacIconButton(
-                icon: CupertinoIcons.xmark,
-                tooltip: l.close,
-                onPressed: widget.onClose,
-              ),
-        title: widget.book.title,
-        actions: [
-          MacIconButton(
-            icon: CupertinoIcons.search,
-            tooltip: l.findInBook,
-            active: _finding,
-            onPressed: _ready ? _toggleFind : null,
-          ),
-          Tooltip(
-            message: _hasSelection ? l.highlight : l.highlightHint,
-            child: IconButton(
-              onPressed: _hasSelection ? _highlightSelection : null,
-              icon: Icon(
-                Icons.border_color_outlined,
-                color: _hasSelection ? null : theme.disabledColor,
-              ),
-              style: _hasSelection
-                  ? IconButton.styleFrom(backgroundColor: _color.marker)
-                  : null,
-            ),
-          ),
-          PopupMenuButton<HighlightColor>(
-            tooltip: l.highlightColor,
-            position: PopupMenuPosition.under,
-            onSelected: _setColor,
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                enabled: false,
-                child: HighlightColorPicker(
-                  value: _color,
-                  onChanged: (color) => Navigator.of(context).pop(color),
-                ),
-              ),
-            ],
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Container(
-                width: 16,
-                height: 16,
-                decoration: BoxDecoration(
-                  color: _color.swatch,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: theme.colorScheme.outlineVariant),
-                ),
-              ),
-            ),
-          ),
-          MacIconButton(
-            icon: CupertinoIcons.pencil,
-            tooltip: l.drawTools,
-            active: _draw,
-            onPressed: _ready ? () => _setDraw(!_draw) : null,
-          ),
-          if (compact)
-            PopupMenuButton<VoidCallback>(
-              tooltip: l.moreActions,
-              position: PopupMenuPosition.under,
-              icon: const Icon(CupertinoIcons.ellipsis),
-              onSelected: (action) => action(),
-              itemBuilder: (context) => [
-                for (final item in more)
-                  PopupMenuItem(
-                    value: item.onPressed,
-                    enabled: item.onPressed != null,
-                    height: 38,
-                    child: Row(
-                      spacing: 10,
-                      children: [
-                        Icon(
-                          item.icon,
-                          size: 18,
-                          color: item.onPressed == null
-                              ? theme.disabledColor
-                              : item.active
-                              ? theme.colorScheme.primary
-                              : null,
-                        ),
-                        Flexible(child: Text(item.label)),
-                      ],
-                    ),
-                  ),
-              ],
+    final toolbar = MacToolbar(
+      leading: widget.onClose == null
+          ? MacIconButton(
+              icon: CupertinoIcons.chevron_back,
+              tooltip: l.back,
+              onPressed: () => Navigator.of(context).pop(),
             )
-          else
-            for (final item in more)
-              MacIconButton(
-                icon: item.icon,
-                tooltip: item.onPressed == null
-                    ? item.hint ?? item.label
-                    : item.label,
-                active: item.active,
-                onPressed: item.onPressed,
+          : MacIconButton(
+              icon: CupertinoIcons.xmark,
+              tooltip: l.close,
+              onPressed: widget.onClose,
+            ),
+      title: widget.book.title,
+      actions: [
+        MacIconButton(
+          icon: CupertinoIcons.search,
+          tooltip: withShortcut(l.findInBook, AppKeys.find),
+          active: _finding,
+          onPressed: _ready ? _toggleFind : null,
+        ),
+        Tooltip(
+          message: _hasSelection
+              ? withShortcut(l.highlight, AppKeys.highlight)
+              : l.highlightHint,
+          child: IconButton(
+            onPressed: _hasSelection ? _highlightSelection : null,
+            icon: Icon(
+              Icons.border_color_outlined,
+              color: _hasSelection ? null : theme.disabledColor,
+            ),
+            style: _hasSelection
+                ? IconButton.styleFrom(backgroundColor: _color.marker)
+                : null,
+          ),
+        ),
+        PopupMenuButton<HighlightColor>(
+          tooltip: l.highlightColor,
+          position: PopupMenuPosition.under,
+          onSelected: _setColor,
+          itemBuilder: (context) => [
+            PopupMenuItem(
+              enabled: false,
+              child: HighlightColorPicker(
+                value: _color,
+                onChanged: (color) => Navigator.of(context).pop(color),
               ),
-        ],
-      ),
-      body: Column(
-        children: [
-          if (_ready && _elsewhere != null) _continueBar(l, theme),
-          if (_finding) _findBar(l, theme),
-          Expanded(
-            child: Row(
-              children: [
-                Expanded(child: viewer),
-                if (wide && _showPanel) ...[
-                  const VerticalDivider(width: 1),
-                  SizedBox(
-                    width: 290,
-                    child: HighlightsPanel(
-                      annotations: _annotations,
-                      onOpen: _goToAnnotation,
-                      onEdit: _editAnnotation,
-                    ),
-                  ),
-                ],
-              ],
+            ),
+          ],
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Container(
+              width: 16,
+              height: 16,
+              decoration: BoxDecoration(
+                color: _color.swatch,
+                shape: BoxShape.circle,
+                border: Border.all(color: theme.colorScheme.outlineVariant),
+              ),
             ),
           ),
-        ],
-      ),
-      bottomNavigationBar: _ready && _pageCount > 1
-          ? Container(
-              decoration: BoxDecoration(
-                color: MacColors.of(context).toolbar,
-                border: Border(
-                  top: BorderSide(color: theme.colorScheme.outlineVariant),
-                ),
-              ),
-              child: SafeArea(
-                // A slider fills whatever height it is offered, so pin it.
-                child: Container(
+        ),
+        MacIconButton(
+          icon: CupertinoIcons.pencil,
+          tooltip: withShortcut(l.drawTools, AppKeys.draw),
+          active: _draw,
+          onPressed: _ready ? () => _setDraw(!_draw) : null,
+        ),
+        if (compact)
+          PopupMenuButton<VoidCallback>(
+            tooltip: l.moreActions,
+            position: PopupMenuPosition.under,
+            icon: const Icon(CupertinoIcons.ellipsis),
+            onSelected: (action) => action(),
+            itemBuilder: (context) => [
+              for (final item in more)
+                PopupMenuItem(
+                  value: item.onPressed,
+                  enabled: item.onPressed != null,
                   height: 38,
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
                   child: Row(
-                    spacing: 12,
+                    spacing: 10,
                     children: [
-                      Expanded(
-                        child: CupertinoSlider(
-                          min: 1,
-                          max: _pageCount.toDouble(),
-                          value: (_dragPage ?? _state.page.toDouble()).clamp(
-                            1,
-                            _pageCount.toDouble(),
-                          ),
-                          onChanged: (v) => setState(() => _dragPage = v),
-                          onChangeEnd: (v) {
-                            setState(() => _dragPage = null);
-                            _controller.goToPage(pageNumber: v.round());
-                          },
-                        ),
+                      Icon(
+                        item.icon,
+                        size: 18,
+                        color: item.onPressed == null
+                            ? theme.disabledColor
+                            : item.active
+                            ? theme.colorScheme.primary
+                            : null,
                       ),
-                      Tooltip(
-                        message: l.goToPage,
-                        child: InkWell(
-                          onTap: _askPage,
-                          borderRadius: BorderRadius.circular(5),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 4,
-                            ),
-                            child: Text(
-                              l.pageOf(
-                                localNumber(
-                                  context,
-                                  (_dragPage ?? _state.page).round(),
-                                ),
-                                localNumber(context, _pageCount),
-                              ),
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                                fontFeatures: const [
-                                  FontFeature.tabularFigures(),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
+                      Flexible(child: Text(item.label)),
                     ],
                   ),
                 ),
+            ],
+          )
+        else
+          for (final item in more)
+            MacIconButton(
+              icon: item.icon,
+              tooltip: item.onPressed == null
+                  ? item.hint ?? item.label
+                  : item.label,
+              active: item.active,
+              onPressed: item.onPressed,
+            ),
+      ],
+    );
+    final extras = [
+      if (_ready && _elsewhere != null) _continueBar(l, theme),
+      if (_finding) _findBar(l, theme),
+    ];
+    final content = Row(
+      children: [
+        Expanded(child: viewer),
+        if (wide && _showPanel) ...[
+          const VerticalDivider(width: 1),
+          SizedBox(
+            width: 290,
+            child: Padding(
+              // Under bars that float, the list starts below the toolbar.
+              padding: EdgeInsets.only(
+                top: _autoHide
+                    ? MacToolbar.height + MediaQuery.paddingOf(context).top
+                    : 0,
               ),
-            )
-          : null,
+              child: HighlightsPanel(
+                annotations: _annotations,
+                onOpen: _goToAnnotation,
+                onEdit: _editAnnotation,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+    final pageBar = _ready && _pageCount > 1
+        ? Container(
+            decoration: BoxDecoration(
+              color: MacColors.of(context).toolbar,
+              border: Border(
+                top: BorderSide(color: theme.colorScheme.outlineVariant),
+              ),
+            ),
+            child: SafeArea(
+              // A slider fills whatever height it is offered, so pin it.
+              child: Container(
+                height: 38,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: Row(
+                  spacing: 12,
+                  children: [
+                    Expanded(
+                      child: CupertinoSlider(
+                        min: 1,
+                        max: _pageCount.toDouble(),
+                        value: (_dragPage ?? _state.page.toDouble()).clamp(
+                          1,
+                          _pageCount.toDouble(),
+                        ),
+                        onChanged: (v) => setState(() => _dragPage = v),
+                        onChangeEnd: (v) {
+                          setState(() => _dragPage = null);
+                          _controller.goToPage(pageNumber: v.round());
+                        },
+                      ),
+                    ),
+                    Tooltip(
+                      message: l.goToPage,
+                      child: InkWell(
+                        onTap: _askPage,
+                        borderRadius: BorderRadius.circular(5),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 4,
+                          ),
+                          child: Text(
+                            l.pageOf(
+                              localNumber(
+                                context,
+                                (_dragPage ?? _state.page).round(),
+                              ),
+                              localNumber(context, _pageCount),
+                            ),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          )
+        : null;
+
+    if (_autoHide) {
+      return Scaffold(
+        body: AutoHideBars(
+          top: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [toolbar, ...extras],
+          ),
+          body: content,
+          bottom: pageBar,
+          // Kept while finding, so the search field doesn't slip away.
+          hold: _finding,
+        ),
+      );
+    }
+    return Scaffold(
+      appBar: toolbar,
+      body: Column(
+        children: [
+          ...extras,
+          Expanded(child: content),
+        ],
+      ),
+      bottomNavigationBar: pageBar,
     );
   }
 }

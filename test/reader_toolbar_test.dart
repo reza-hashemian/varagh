@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:varagh/core/app_state.dart';
+import 'package:varagh/core/auto_hide_bars.dart';
 import 'package:varagh/core/db.dart';
 import 'package:varagh/core/theme.dart';
 import 'package:varagh/data/library.dart';
@@ -82,6 +83,47 @@ void main() {
       expect(find.byIcon(CupertinoIcons.fullscreen_exit), findsOneWidget);
       await tester.pumpWidget(const SizedBox());
     }
+    debugDefaultTargetPlatformOverride = null;
+  });
+
+  testWidgets('with auto-hide on, the bars float and slide away', (
+    tester,
+  ) async {
+    library.setSetting('reader.autoHide', '1');
+    await open(tester, 1000);
+    expect(tester.takeException(), isNull);
+    expect(find.byType(AutoHideBars), findsOneWidget);
+    expect(find.byIcon(CupertinoIcons.search), findsOneWidget);
+    await tester.pump(idleDelay + const Duration(seconds: 1));
+    final slides = tester.widgetList<AnimatedSlide>(
+      find.descendant(
+        of: find.byType(AutoHideBars),
+        matching: find.byType(AnimatedSlide),
+      ),
+    );
+    expect(slides.first.offset, const Offset(0, -1));
+
+    // A press brings them back, so the next one reaches the buttons.
+    await tester.tapAt(const Offset(500, 400));
+    await tester.pump();
+    final shown = tester.widgetList<AnimatedSlide>(
+      find.descendant(
+        of: find.byType(AutoHideBars),
+        matching: find.byType(AnimatedSlide),
+      ),
+    );
+    expect(shown.first.offset, Offset.zero);
+    await tester.pumpAndSettle();
+
+    // Focus mode and back keeps everything in one piece.
+    await tester.tap(find.byIcon(CupertinoIcons.fullscreen));
+    await tester.pumpAndSettle();
+    expect(find.byIcon(CupertinoIcons.fullscreen_exit), findsOneWidget);
+    await tester.tap(find.byIcon(CupertinoIcons.fullscreen_exit));
+    await tester.pumpAndSettle();
+    expect(find.byType(AutoHideBars), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
     debugDefaultTargetPlatformOverride = null;
   });
 

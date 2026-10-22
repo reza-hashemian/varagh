@@ -9,6 +9,7 @@ import 'package:pdfrx/pdfrx.dart';
 import 'core/app_state.dart';
 import 'core/db.dart';
 import 'core/open_with.dart';
+import 'core/shortcuts.dart';
 import 'core/theme.dart';
 import 'core/windows.dart';
 import 'data/library.dart';
@@ -31,6 +32,7 @@ Future<void> main(List<String> args) async {
     await _openFromLaunch(state, args);
   }
 
+  registerAppShortcuts(state);
   runApp(VaraghApp(state: state));
   state.sync.syncNow();
   if (canOpenWindows) state.watchOtherWindows();

@@ -440,5 +440,25 @@
   "newWindow": "New window",
   "newWindowFailed": "Couldn't open a new window.",
   "findBookHint": "Find a book",
-  "scrollTogether": "Scroll together"
+  "scrollTogether": "Scroll together",
+  "keyboardShortcuts": "Keyboard shortcuts",
+  "shortcutDarkMode": "Dark look on or off",
+  "shortcutPageDark": "Dark page in a book",
+  "shortcutAutoHide": "Hide bars when idle, on or off",
+  "shortcutCloseBook": "Close the book",
+  "autoHideBars": "Hide bars when idle",
+  "autoHideBarsHint": "In a book, the toolbar and page bar slide away after 5 seconds without moving the mouse, and come back as soon as it moves.",
+  "autoHideOn": "Bars now hide when idle",
+  "autoHideOff": "Bars now stay on screen",
+  "updates": "Updates",
+  "updatesHint": "New versions are published on GitHub.",
+  "openGitHub": "Open GitHub",
+  "linkFailed": "Couldn't open {target}",
+  "@linkFailed": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  }
 }

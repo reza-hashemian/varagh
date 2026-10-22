@@ -967,4 +967,46 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get scrollTogether => 'Scroll together';
+
+  @override
+  String get keyboardShortcuts => 'Keyboard shortcuts';
+
+  @override
+  String get shortcutDarkMode => 'Dark look on or off';
+
+  @override
+  String get shortcutPageDark => 'Dark page in a book';
+
+  @override
+  String get shortcutAutoHide => 'Hide bars when idle, on or off';
+
+  @override
+  String get shortcutCloseBook => 'Close the book';
+
+  @override
+  String get autoHideBars => 'Hide bars when idle';
+
+  @override
+  String get autoHideBarsHint =>
+      'In a book, the toolbar and page bar slide away after 5 seconds without moving the mouse, and come back as soon as it moves.';
+
+  @override
+  String get autoHideOn => 'Bars now hide when idle';
+
+  @override
+  String get autoHideOff => 'Bars now stay on screen';
+
+  @override
+  String get updates => 'Updates';
+
+  @override
+  String get updatesHint => 'New versions are published on GitHub.';
+
+  @override
+  String get openGitHub => 'Open GitHub';
+
+  @override
+  String linkFailed(String target) {
+    return 'Couldn\'t open $target';
+  }
 }

@@ -7,7 +7,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 
 import '../core/app_state.dart';
+import '../core/auto_hide_bars.dart';
+import '../core/links.dart';
 import '../core/mac_widgets.dart';
+import '../core/shortcuts.dart';
 import '../core/theme.dart';
 import '../data/library.dart';
 import '../data/models.dart';
@@ -58,7 +61,8 @@ class _TextReaderScreenState extends State<TextReaderScreen>
     implements LinkedReader {
   static const _saveDelay = Duration(milliseconds: 500);
 
-  late final Library _library = AppScope.read(context).library;
+  late final AppState _appState = AppScope.read(context);
+  late final Library _library = _appState.library;
   final _scroll = ScrollController();
   final _keys = FocusNode();
 
@@ -79,6 +83,12 @@ class _TextReaderScreenState extends State<TextReaderScreen>
   var _following = false;
 
   late PagePaper _paper;
+
+  /// The paper before the dark-page shortcut, to go back to.
+  PagePaper? _paperBeforeDark;
+
+  /// Whether the bars slide away while the mouse rests.
+  late var _autoHide = _appState.autoHideBars;
   late double _size, _height, _width;
 
   @override
@@ -93,8 +103,58 @@ class _TextReaderScreenState extends State<TextReaderScreen>
     _width = _setting('text.width', 720);
     _scroll.addListener(_onScroll);
     WidgetsBinding.instance.addObserver(this);
+    _appState.addListener(_onAppChanged);
     _joinLink(widget.link);
     _load();
+  }
+
+  void _onAppChanged() {
+    if (_appState.autoHideBars != _autoHide && mounted) {
+      setState(() => _autoHide = _appState.autoHideBars);
+    }
+  }
+
+  void _toggleAutoHide() {
+    final l = AppLocalizations.of(context);
+    _appState.autoHideBars = !_appState.autoHideBars;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(_appState.autoHideBars ? l.autoHideOn : l.autoHideOff),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+  }
+
+  void _togglePageDark() {
+    if (_paper == PagePaper.dark || _paper == PagePaper.black) {
+      _setPaper(_paperBeforeDark ?? PagePaper.original);
+    } else {
+      _paperBeforeDark = _paper;
+      _setPaper(PagePaper.dark);
+    }
+  }
+
+  void _close() {
+    if (widget.onClose != null) {
+      widget.onClose!();
+    } else {
+      Navigator.of(context).maybePop();
+    }
+  }
+
+  /// Opens a link outside the app: a web page, or a file such as a video.
+  /// Links between the book's own chapters are left alone.
+  Future<bool> _onTapUrl(String url) async {
+    final path = url.split('#').first.toLowerCase();
+    if (path.isEmpty || RegExp(r'\.x?html?$').hasMatch(path)) return false;
+    final messenger = ScaffoldMessenger.of(context);
+    final failed = AppLocalizations.of(context).linkFailed(url);
+    if (!await openBookLink(_library, widget.book, url)) {
+      messenger.showSnackBar(SnackBar(content: Text(failed)));
+    }
+    return true;
   }
 
   @override
@@ -173,6 +233,7 @@ class _TextReaderScreenState extends State<TextReaderScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _appState.removeListener(_onAppChanged);
     _leaveLink(widget.link);
     _flush();
     _scroll.dispose();
@@ -568,7 +629,13 @@ class _TextReaderScreenState extends State<TextReaderScreen>
               ),
           child: SingleChildScrollView(
             controller: _scroll,
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            // Under bars that float, the text starts and ends clear of them.
+            padding: EdgeInsets.fromLTRB(
+              24,
+              _autoHide && !_focus ? 32 + MacToolbar.height : 32,
+              24,
+              _autoHide && !_focus ? 32 + 38 : 32,
+            ),
             // Sits inside the scroll view so it gets the wheel first and
             // can apply the chosen scroll speed.
             child: Listener(
@@ -587,6 +654,7 @@ class _TextReaderScreenState extends State<TextReaderScreen>
                           height: _height,
                           color: ink,
                         ),
+                        onTapUrl: _onTapUrl,
                         customStylesBuilder: (element) =>
                             element.localName == 'a'
                             ? {'text-decoration': 'none'}
@@ -629,123 +697,137 @@ class _TextReaderScreenState extends State<TextReaderScreen>
       );
     }
 
-    return Focus(
-      focusNode: _keys,
-      autofocus: true,
-      onKeyEvent: _onKey,
-      child: Scaffold(
-        backgroundColor: paper,
-        appBar: _focus
-            ? null
-            : MacToolbar(
-                leading: widget.onClose == null
-                    ? MacIconButton(
-                        icon: CupertinoIcons.chevron_back,
-                        tooltip: l.back,
-                        onPressed: () => Navigator.of(context).pop(),
-                      )
-                    : MacIconButton(
-                        icon: CupertinoIcons.xmark,
-                        tooltip: l.close,
-                        onPressed: widget.onClose,
+    final toolbar = _focus
+        ? null
+        : MacToolbar(
+            leading: widget.onClose == null
+                ? MacIconButton(
+                    icon: CupertinoIcons.chevron_back,
+                    tooltip: l.back,
+                    onPressed: () => Navigator.of(context).pop(),
+                  )
+                : MacIconButton(
+                    icon: CupertinoIcons.xmark,
+                    tooltip: l.close,
+                    onPressed: widget.onClose,
+                  ),
+            title: widget.book.title,
+            actions: [
+              MacIconButton(
+                icon: CupertinoIcons.list_bullet,
+                tooltip: l.contents,
+                onPressed: book == null || count < 2 ? null : _showContents,
+              ),
+              ValueListenableBuilder(
+                valueListenable: _selected,
+                builder: (context, selected, _) => MacIconButton(
+                  icon: CupertinoIcons.globe,
+                  tooltip: selected.isEmpty ? l.translateHint : l.translate,
+                  onPressed: selected.isEmpty
+                      ? null
+                      : () => showTranslation(context, selected),
+                ),
+              ),
+              MacIconButton(
+                icon: CupertinoIcons.textformat_size,
+                tooltip: l.textSettings,
+                onPressed: _showTextSettings,
+              ),
+              MacIconButton(
+                icon: CupertinoIcons.fullscreen,
+                tooltip: withShortcut(l.focusMode, AppKeys.focusMode),
+                onPressed: () => setState(() => _focus = true),
+              ),
+              ..._deskActions(l, theme),
+            ],
+          );
+    final page = Stack(
+      children: [
+        Positioned.fill(child: SafeArea(child: body)),
+        if (_focus)
+          PositionedDirectional(
+            top: 8,
+            end: 8,
+            child: SafeArea(
+              child: Opacity(
+                opacity: 0.55,
+                child: MacIconButton(
+                  icon: CupertinoIcons.fullscreen_exit,
+                  tooltip: l.exitFocus,
+                  onPressed: () => setState(() => _focus = false),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+    final sectionBar = _focus || book == null || count < 2
+        ? null
+        : Container(
+            decoration: BoxDecoration(
+              color: MacColors.of(context).toolbar,
+              border: Border(
+                top: BorderSide(color: theme.colorScheme.outlineVariant),
+              ),
+            ),
+            child: SafeArea(
+              child: SizedBox(
+                height: 38,
+                child: Row(
+                  children: [
+                    const SizedBox(width: 8),
+                    MacIconButton(
+                      icon: CupertinoIcons.chevron_back,
+                      tooltip: l.previousSection,
+                      onPressed: _section > 0
+                          ? () => _goToSection(_section - 1)
+                          : null,
+                    ),
+                    Expanded(
+                      child: Text(
+                        l.sectionOf(
+                          localNumber(context, _section + 1),
+                          localNumber(context, count),
+                        ),
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                title: widget.book.title,
-                actions: [
-                  MacIconButton(
-                    icon: CupertinoIcons.list_bullet,
-                    tooltip: l.contents,
-                    onPressed: book == null || count < 2 ? null : _showContents,
-                  ),
-                  ValueListenableBuilder(
-                    valueListenable: _selected,
-                    builder: (context, selected, _) => MacIconButton(
-                      icon: CupertinoIcons.globe,
-                      tooltip: selected.isEmpty ? l.translateHint : l.translate,
-                      onPressed: selected.isEmpty
-                          ? null
-                          : () => showTranslation(context, selected),
                     ),
-                  ),
-                  MacIconButton(
-                    icon: CupertinoIcons.textformat_size,
-                    tooltip: l.textSettings,
-                    onPressed: _showTextSettings,
-                  ),
-                  MacIconButton(
-                    icon: CupertinoIcons.fullscreen,
-                    tooltip: l.focusMode,
-                    onPressed: () => setState(() => _focus = true),
-                  ),
-                  ..._deskActions(l, theme),
-                ],
-              ),
-        body: Stack(
-          children: [
-            Positioned.fill(child: SafeArea(child: body)),
-            if (_focus)
-              PositionedDirectional(
-                top: 8,
-                end: 8,
-                child: SafeArea(
-                  child: Opacity(
-                    opacity: 0.55,
-                    child: MacIconButton(
-                      icon: CupertinoIcons.fullscreen_exit,
-                      tooltip: l.exitFocus,
-                      onPressed: () => setState(() => _focus = false),
+                    MacIconButton(
+                      icon: CupertinoIcons.chevron_forward,
+                      tooltip: l.nextSection,
+                      onPressed: _section < count - 1
+                          ? () => _goToSection(_section + 1)
+                          : null,
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                  ],
                 ),
               ),
-          ],
+            ),
+          );
+
+    return CallbackShortcuts(
+      bindings: {
+        AppKeys.focusMode: () => setState(() => _focus = !_focus),
+        AppKeys.pageDark: _togglePageDark,
+        AppKeys.autoHide: _toggleAutoHide,
+        AppKeys.closeBook: _close,
+      },
+      child: Focus(
+        focusNode: _keys,
+        autofocus: true,
+        onKeyEvent: _onKey,
+        child: Scaffold(
+          backgroundColor: paper,
+          appBar: _autoHide ? null : toolbar,
+          body: _autoHide && toolbar != null
+              ? AutoHideBars(top: toolbar, body: page, bottom: sectionBar)
+              : page,
+          bottomNavigationBar: _autoHide ? null : sectionBar,
         ),
-        bottomNavigationBar: _focus || book == null || count < 2
-            ? null
-            : Container(
-                decoration: BoxDecoration(
-                  color: MacColors.of(context).toolbar,
-                  border: Border(
-                    top: BorderSide(color: theme.colorScheme.outlineVariant),
-                  ),
-                ),
-                child: SafeArea(
-                  child: SizedBox(
-                    height: 38,
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 8),
-                        MacIconButton(
-                          icon: CupertinoIcons.chevron_back,
-                          tooltip: l.previousSection,
-                          onPressed: _section > 0
-                              ? () => _goToSection(_section - 1)
-                              : null,
-                        ),
-                        Expanded(
-                          child: Text(
-                            l.sectionOf(
-                              localNumber(context, _section + 1),
-                              localNumber(context, count),
-                            ),
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                        MacIconButton(
-                          icon: CupertinoIcons.chevron_forward,
-                          tooltip: l.nextSection,
-                          onPressed: _section < count - 1
-                              ? () => _goToSection(_section + 1)
-                              : null,
-                        ),
-                        const SizedBox(width: 8),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
       ),
     );
   }

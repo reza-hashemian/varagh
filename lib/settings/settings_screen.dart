@@ -2,10 +2,14 @@ import 'package:flutter/cupertino.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' hide TextDirection;
+import 'package:url_launcher/url_launcher.dart';
 
 import '../core/app_state.dart';
+import '../core/links.dart';
 import '../core/mac_widgets.dart';
+import '../core/shortcuts.dart';
 import '../core/theme.dart';
+import '../core/windows.dart';
 import '../l10n/app_localizations.dart';
 import '../library/backup_actions.dart';
 import '../sync/sync_controller.dart';
@@ -141,8 +145,23 @@ class SettingsScreen extends StatelessWidget {
                           onChanged: (v) => state.smoothScroll = v,
                         ),
                       ),
+                      MacRow(
+                        label: l.autoHideBars,
+                        control: CupertinoSwitch(
+                          value: state.autoHideBars,
+                          onChanged: (v) => state.autoHideBars = v,
+                        ),
+                        below: Text(
+                          l.autoHideBarsHint,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
+                  // Phones rarely have a keyboard.
+                  if (canOpenWindows) const _ShortcutsGroup(),
                   const _SyncGroup(),
                   MacGroup(
                     header: l.backup,
@@ -181,8 +200,24 @@ class SettingsScreen extends StatelessWidget {
                       MacRow(
                         label: l.version,
                         control: Text(
-                          '0.4.0',
+                          '0.9.0',
                           style: TextStyle(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      MacRow(
+                        label: l.updates,
+                        control: OutlinedButton(
+                          onPressed: () => launchUrl(
+                            releasesPage,
+                            mode: LaunchMode.externalApplication,
+                          ),
+                          child: Text(l.openGitHub),
+                        ),
+                        below: Text(
+                          l.updatesHint,
+                          style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
@@ -196,6 +231,57 @@ class SettingsScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// What each keyboard shortcut does.
+class _ShortcutsGroup extends StatelessWidget {
+  const _ShortcutsGroup();
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final keys = [
+      (l.shortcutDarkMode, AppKeys.darkMode),
+      (l.shortcutPageDark, AppKeys.pageDark),
+      (l.autoHideBars, AppKeys.autoHide),
+      (l.focusMode, AppKeys.focusMode),
+      (l.findInBook, AppKeys.find),
+      (l.goToPage, AppKeys.goToPage),
+      (l.highlight, AppKeys.highlight),
+      (l.drawTools, AppKeys.draw),
+      (l.undo, AppKeys.undo),
+      (l.zoomIn, AppKeys.zoomIn),
+      (l.zoomOut, AppKeys.zoomOut),
+      (l.shortcutCloseBook, AppKeys.closeBook),
+    ];
+    return MacGroup(
+      header: l.keyboardShortcuts,
+      children: [
+        for (final (label, key) in keys)
+          MacRow(
+            label: label,
+            control: Directionality(
+              textDirection: TextDirection.ltr,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: MacColors.of(context).control,
+                  borderRadius: BorderRadius.circular(5),
+                  border: Border.all(color: theme.colorScheme.outlineVariant),
+                ),
+                child: Text(
+                  shortcutLabel(key),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
