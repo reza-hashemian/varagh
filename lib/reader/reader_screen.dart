@@ -99,6 +99,9 @@ class ReaderScreen extends StatefulWidget {
   State<ReaderScreen> createState() => _ReaderScreenState();
 }
 
+/// Height of the page slider bar at the foot of a book, less its border.
+const _pageBarHeight = 38.0;
+
 class _ReaderScreenState extends State<ReaderScreen>
     with WidgetsBindingObserver
     implements LinkedReader {
@@ -1393,7 +1396,16 @@ class _ReaderScreenState extends State<ReaderScreen>
       );
     }
 
-    // The tool picker floats over the page, outside the page tint.
+    // The tool picker floats over the page, outside the page tint. Under
+    // bars that float, the page runs to the screen's bottom edge, so the
+    // picker stands clear of the page bar and the system's navigation.
+    final floatingBars = _autoHide && !_focus;
+    final toolsBottom =
+        14.0 +
+        (floatingBars
+            ? MediaQuery.paddingOf(context).bottom +
+                  (_ready && _pageCount > 1 ? _pageBarHeight + 1 : 0)
+            : 0);
     viewer = Stack(
       children: [
         Positioned.fill(child: viewer),
@@ -1401,7 +1413,7 @@ class _ReaderScreenState extends State<ReaderScreen>
           Positioned(
             left: 12,
             right: 12,
-            bottom: 14,
+            bottom: toolsBottom,
             child: Center(
               child: DrawToolbar(
                 settings: _tools,
@@ -1703,7 +1715,7 @@ class _ReaderScreenState extends State<ReaderScreen>
             child: SafeArea(
               // A slider fills whatever height it is offered, so pin it.
               child: Container(
-                height: 38,
+                height: _pageBarHeight,
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: Row(
                   spacing: 12,
